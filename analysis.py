@@ -398,6 +398,61 @@ def permuatator2(liist):
         results_dict[k]=make_graphs(v,dir,thresh)
     return(results_dict)
 
+def permuatator3(liist):
+    results_dict={'no':{},'ov':{},'ob':{}}
+    Dict=liist[0]
+    dir=liist[2]
+    thresh=liist[3]
+    key=liist[1]
+    print(key)
+    for k,v in Dict.items():
+        results_dict[k]=mu_make_graphs(k,v,dir,thresh)
+    return(results_dict)
+
+
+def mu_make_graphs(key, values, direction, min_cor):
+    # FC_dict={}
+    # graph_dict={}
+    # partition_dict={}
+    # clustering_dict ={}
+    # centrality_dict ={}
+    # PC_dict={}
+    # partition_dict={}
+    ########################################
+    cor_matrix = np.asmatrix(values)
+    x=abs(cor_matrix)
+    mu=x.mean()
+    ########################################
+    G = nx.from_numpy_matrix(cor_matrix)
+    tG = threshold(G, direction, min_cor)
+    ########################################
+    (partition,vals,graph)=ges(tG)
+    # partition_dict[key]=(partition,vals)
+    vals=np.array(vals)
+    ci=np.reshape(vals, (100, 1))
+    W=np.array(cor_matrix)
+    PC=participation_coef(W=W, ci=ci, degree="undirected")
+    pc_dict={}
+    for i in range(len(PC)):
+        pc_dict[i]=PC[i]
+    # PC_dict[key]=PC
+    ########################################
+    # FC_dict[key]=mu
+    ########################################
+    clustering = nx.clustering(tG, weight=True)
+    # clustering_dict[key]=clustering
+    ########################################
+    centrality = nx.betweenness_centrality(tG, weight=True)
+    # centrality_dict[key]=centrality
+    ########################################
+    nx.set_node_attributes(G, centrality, 'centrality')
+    nx.set_node_attributes(G, clustering, 'clustering')
+    nx.set_node_attributes(G, pc_dict, 'PC')
+    # graph_dict[key]=G
+    ########################################
+    return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
+    'values':vals,'graph':graph}})
+
 
 
 def participation_coef(W, ci, degree='undirected'):
