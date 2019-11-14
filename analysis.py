@@ -217,13 +217,10 @@ def make_graphs(dict_o_data, direction, min_cor):
     PC_dict={}
     partition_dict={}
     for key, values in dict_o_data.items():
-        # print(key)
         ########################################
         cor_matrix = np.asmatrix(values)
-        # print(cor_matrix.shape)
         x=abs(cor_matrix)
         mu=x.mean()
-        # print(mu)
         ########################################
         G = nx.from_numpy_matrix(cor_matrix)
         tG = threshold(G, direction, min_cor)
@@ -231,10 +228,19 @@ def make_graphs(dict_o_data, direction, min_cor):
         (partition,vals,graph)=ges(tG)
         partition_dict[key]=(partition,vals)
         vals=np.array(vals)
-        PC=participation_coef(W=cor_matrix, ci=vals, degree="undirected")
+        ci=np.reshape(vals, (100, 1))
+        # print(type(ci))
+        W=np.array(cor_matrix)
+        # print(W.shape)
+        # print(type(W))
+        PC=participation_coef(W=W, ci=ci, degree="undirected")
+        # pdb.set_trace()
         pc_dict={}
         for i in range(len(PC)):
+            # print(i)
+            # print(PC[i])
             pc_dict[i]=PC[i]
+        # pdb.set_trace()
         PC_dict[key]=PC
         ########################################
         FC_dict[key]=mu
@@ -279,12 +285,15 @@ def threshold(G, corr_direction, min_correlation):
 
 def make_total_graphs(dict_o_data):
     mylist=[]
-    for key, val_list in dict_o_data.items():
-        for i in val_list:
-            cor_matrix = np.asarray(i)
-            mylist.append(cor_matrix)
+    print(len(mylist))
+    for key, value in dict_o_data.items():
+        # print(key)
+        # pdb.set_trace()
+        cor_matrix = np.asarray(value)
+        mylist.append(cor_matrix)
+    print(len(mylist))
     x=np.stack(mylist, axis=2)
-    mu=np.median(x, axis=(2))
+    mu=np.mean(x, axis=(2))
     return(mu)
 
 
@@ -392,7 +401,24 @@ def permuatator2(liist):
 
 
 def participation_coef(W, ci, degree='undirected'):
-#from bctpy
+    '''
+    Participation coefficient is a measure of diversity of intermodular
+    connections of individual nodes.
+    Parameters
+    ----------
+    W : NxN np.ndarray
+        binary/weighted directed/undirected connection matrix
+    ci : Nx1 np.ndarray
+        community affiliation vector
+    degree : str
+        Flag to describe nature of graph 'undirected': For undirected graphs
+                                         'in': Uses the in-degree
+                                         'out': Uses the out-degree
+    Returns
+    -------
+    P : Nx1 np.ndarray
+        participation coefficient
+    '''
     if degree == 'in':
         W = W.T
 
@@ -403,9 +429,17 @@ def participation_coef(W, ci, degree='undirected'):
     Ko = np.sum(W, axis=1)  # (out) degree
     Gc = np.dot((W != 0), np.diag(ci))  # neighbor community affiliation
     Kc2 = np.zeros((n,))  # community-specific neighbors
+    # ci=np.reshape(ci, (100, 1))
+    # Kc2=np.reshape(Kc2, (100, 1))
+    # print('this is the shape of ci')
+    # print(ci.shape)
 
     for i in range(1, int(np.max(ci)) + 1):
-        Kc2 = Kc2 + np.square(np.sum(W * (Gc == i), axis=1))
+        # print(Kc2)
+        # print(np.square(np.sum(W * (Gc == i), axis=1)))
+        # pdb.set_trace()
+        # np.add(Kc2,np.square(np.sum(W * (Gc == i), axis=1)), out=Kc2)
+        Kc2 += np.square(np.sum(W * (Gc == i), axis=1))
 
     P = np.ones((n,)) - Kc2 / np.square(Ko)
     # P=0 if for nodes with no (out) neighbors
