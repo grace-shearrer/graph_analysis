@@ -9,6 +9,7 @@ import pickle
 from datetime import datetime
 from time import time
 import statistics
+from scipy import stats
 import community
 import matplotlib
 # matplotlib.use("Qt5Agg")
@@ -303,10 +304,15 @@ def ges(mu):
     nx.set_node_attributes(mu, partition, 'modules')
     return((partition,vals, mu))
 
-def jenny_graph(graph):
-    edges,weights = zip(*nx.get_edge_attributes(graph, 'weight').items())
-    nodes, color = zip(*nx.get_node_attributes(graph,'modules').items()) #if your modules are named different change here
-    nodes, positions = zip(*nx.get_node_attributes(graph,'modules').items())
+def grace_graph(graph, metric, group, tile):
+    e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
+    purr=np.percentile(w, tile)
+    g=threshold(graph,'postive',purr)
+
+    edges,weights = zip(*nx.get_edge_attributes(g, 'weight').items())
+    nodes, color = zip(*nx.get_node_attributes(g, 'modules').items()) #if your modules are named different change here
+    nodes, size = zip(*nx.get_node_attributes(g, metric).items())
+    nodes, positions = zip(*nx.get_node_attributes(g,'modules').items())
     #positions
     positions=nx.circular_layout(graph) #this is defining a circluar graph, if you want a different one you change the circular part of this line
 
@@ -319,17 +325,20 @@ def jenny_graph(graph):
     nColormap=plt.cm.Spectral #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
     cM=color.max()
     cm=color.min()
-    y=nx.draw_networkx_nodes(graph,positions,
+    sz=np.array(size)
+    scale=1000/sz.max()
+    sza=sz*scale
+    print(sz.shape)
+    y=nx.draw_networkx_nodes(g,positions,
                            node_color=color,
-                           node_size=40,
+                           node_size=sza,
                            alpha=0.8,
                            cmap= nColormap,
                            vmin=cm ,vmax=cM)
 
     #Styling for labels
-    nx.draw_networkx_labels(graph, positions, font_size=10,
+    nx.draw_networkx_labels(g, positions, font_size=10,
                             font_family='sans-serif', fontweight = 'bold')
-
 
     #draw edges
     weights=np.array(weights)
@@ -337,7 +346,7 @@ def jenny_graph(graph):
     wt=weights*5
     M=wt.max()
     m=wt.min()
-    x=nx.draw_networkx_edges(graph, positions, edge_list=edges, style='solid', width = wt, edge_color = wt,
+    x=nx.draw_networkx_edges(g, positions, edge_list=edges, style='solid', width = wt, edge_color = wt,
                            cmap=eColormap,
                            edge_vmin=m,
                            edge_vmax=M)
@@ -350,7 +359,7 @@ def jenny_graph(graph):
     edge_bar.set_label('Strength of edge weight',fontsize = 25)
 
     plt.axis('off')
-    plt.title("Modularity and Edge Weights of Average Graph", fontsize = 30)
+    plt.title("Modularity and Edge Weights of Average %s Graph"%group, fontsize = 30)
     #plt.savefig(os.path.join(basepath,"betaseries_bevel/5_analysis/modularity_circle_reward.png", format="PNG")
     plt.show()
 
@@ -448,6 +457,7 @@ def mu_make_graphs(key, values, direction, min_cor):
     nx.set_node_attributes(G, centrality, 'centrality')
     nx.set_node_attributes(G, clustering, 'clustering')
     nx.set_node_attributes(G, pc_dict, 'PC')
+    nx.set_node_attributes(G, partition, 'modules')
     # graph_dict[key]=G
     ########################################
     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
