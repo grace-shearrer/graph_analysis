@@ -322,7 +322,7 @@ def grace_graph(graph, metric, group, tile):
 
     #draws nodes
     color = np.array(color)
-    nColormap=plt.cm.Spectral #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    nColormap=plt.cm.Set1 #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
     cM=color.max()
     cm=color.min()
     sz=np.array(size)
@@ -352,7 +352,7 @@ def grace_graph(graph, metric, group, tile):
                            edge_vmax=M)
 
     #format the colorbar
-    node_bar=plt.colorbar(y)
+    node_bar=plt.colorbar(y, ticks=color, label='Module value')
     edge_bar=plt.colorbar(x)
 
     node_bar.set_label('Modularity',fontsize = 25)
@@ -367,31 +367,36 @@ def module_fig(G, Type):
     edges,weights = zip(*nx.get_edge_attributes(G,'weight').items())
     #nodes, size = zip(*nx.get_node_attributes(G,'clustering').items())
 
-
     positions=nx.circular_layout(G)
     plt.figure(figsize=(25,20))
 
     color = np.array(list(G.nodes))
-    nColormap=plt.cm.Spectral #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    nColormap=plt.cm.cool #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
     cM=color.max()
     cm=color.min()
     nx.draw_networkx_nodes(G,positions,
                            node_color=color,
                            #node_size=size,
                            alpha=1.0,
-                           cmap= 'Spectral',
+                           cmap= plt.cm.Set1,
                            vmin=cm,vmax=cM )
 
     #Styling for labels
     nx.draw_networkx_labels(G, positions, font_size=8, font_family='sans-serif')
+    print(weights)
     wt=np.array(weights)/5
-    x=nx.draw_networkx_edges(G, positions, edge_list=edges,style='solid', width = wt, edge_color = weights)
+    weights=np.array(weights)
+    wtMin=weights.min()
+    wtMax=weights.max()
 
-    edge_bar=plt.colorbar(x)
-    edge_bar.set_label('Strength of edge weight',fontsize = 25)
+    x=nx.draw_networkx_edges(G, positions, edge_list=edges,style='solid', width = wt,
+    edge_color = weights, edge_vmin=wtMin, edge_vmax=wtMax, edge_cmap=nColormap)
+
+    sm = plt.cm.ScalarMappable(cmap=nColormap, norm=plt.Normalize(vmin = wtMin, vmax=wtMax))
+    sm._A = []
+    plt.colorbar(sm)
 
     plt.title("Module Connectivity Weights %s"%Type, fontsize = 30)
-    #plt.savefig(os.path.join(basepath,"betaseries_bevel/5_analysis/results/modularity_edges_reward_weighted.png"), format="PNG")
     plt.axis('off')
     plt.show()
 

@@ -10,7 +10,7 @@ import statistics
 import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
-
+import community
 import analysis as an
 
 
@@ -20,8 +20,8 @@ summary_dict=an.onetoughjar(os.path.join(basepath,'tmp','summary_dict_11-14-2019
 # summary_dict['NR']['no']['modules']['partition']
 summary_dict['NR']['no']['graphs'].nodes(data=True)
 
-an.grace_graph(summary_dict['NR']['no']['graphs'], 'clustering', 'Normal weight', 1)
-an.grace_graph(summary_dict['NR']['ov']['graphs'], 'clustering', 'Overweight', 1)
+# an.grace_graph(summary_dict['NR']['no']['graphs'], 'clustering', 'Normal weight', 1)
+# an.grace_graph(summary_dict['NR']['ov']['graphs'], 'clustering', 'Overweight', 1)
 an.grace_graph(summary_dict['NR']['ob']['graphs'], 'clustering', 'Obese', 1)
 
 for key, value in summary_dict.items():
@@ -30,4 +30,7 @@ for key, value in summary_dict.items():
          comm_graph = community.induced_graph(v['modules']['partition'], v['graphs'])
          v.update(comm_graph = comm_graph)
 
-an.module_fig(summary_dict['NR']['no']['comm_graphs'])
+# an.module_fig(summary_dict['NR']['no']['comm_graphs'])
+# an.module_fig(summary_dict['NR']['no']['comm_graph'], 'Normal')
+# an.module_fig(summary_dict['NR']['ov']['comm_graph'], 'Overweight')
+# an.module_fig(summary_dict['NR']['ob']['comm_graph'], 'Obese')
