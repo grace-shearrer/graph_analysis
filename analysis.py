@@ -420,13 +420,6 @@ def permuatator3(liist):
 
 
 def mu_make_graphs(key, values, direction, min_cor):
-    # FC_dict={}
-    # graph_dict={}
-    # partition_dict={}
-    # clustering_dict ={}
-    # centrality_dict ={}
-    # PC_dict={}
-    # partition_dict={}
     ########################################
     cor_matrix = np.asmatrix(values)
     x=abs(cor_matrix)
@@ -444,10 +437,6 @@ def mu_make_graphs(key, values, direction, min_cor):
     pc_dict={}
     for i in range(len(PC)):
         pc_dict[i]=PC[i]
-    # PC_dict[key]=PC
-    ########################################
-    # FC_dict[key]=mu
-    ########################################
     clustering = nx.clustering(tG, weight=True)
     # clustering_dict[key]=clustering
     ########################################
@@ -458,7 +447,6 @@ def mu_make_graphs(key, values, direction, min_cor):
     nx.set_node_attributes(G, clustering, 'clustering')
     nx.set_node_attributes(G, pc_dict, 'PC')
     nx.set_node_attributes(G, partition, 'modules')
-    # graph_dict[key]=G
     ########################################
     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
     'values':vals,'graph':graph}})
