@@ -305,31 +305,67 @@ def ges(mu):
     nx.set_node_attributes(mu, partition, 'modules')
     return((partition,vals, mu))
 
-def grace_graph(graph, metric, group, tile):
+def threshold2(G, min_correlation):
+    H = G.copy()
+    for stock1, stock2, weight in list(G.edges(data=True)):
+        if weight["weight"] < min_correlation:
+            H.remove_edge(stock1, stock2)
+    return(H)
+
+def grace_graph(graph, group,  **kwargs):
     e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
-    purr=np.percentile(w, tile)
-    g=threshold(graph,'postive',purr)
+    if bool(kwargs) == False:
+        positions = nx.circular_layout(graph)
+        size = 100
+        title= "Modularity and edge weights \n of average %s graph"%(group)
+        save="%s_graph.png"%(group)
+    else:
+        if 'position' in kwargs and kwargs['position']=='spectral':
+            positions = nx.spectral_layout(graph)
+            title= "Spectral modularity and edge weights \n of average %s graph"%(group)
+            save="Spectral_%s_graph.png"%(group)
+        elif 'position' in kwargs and kwargs['position']=='spring':
+            positions = nx.sping_layout(graph)
+            title= "Spring modularity and edge weights \n of average %s graph"%(group)
+            save="Sping_%s_graph.png"%(group)
+        else:
+            positions = nx.circular_layout(graph)
+            title= "Circle modularity and edge weights \n of average %s graph"%(group)
+            save="Circle_%s_graph.png"%(group)
+        if 'metric' in kwargs:
+            nodes, size = zip(*nx.get_node_attributes(graph, kwargs['metric']).items())
+        else:
+            size = 100
+            title = "basic"
+            save="%s_graph.png"%(group)
+        if 'thresh' in kwargs:
+            tile=kwargs['thresh']
+            purr=np.percentile(w, tile)
+            print(purr)
+            graph=threshold2(graph,purr)
 
-    edges,weights = zip(*nx.get_edge_attributes(g, 'weight').items())
-    nodes, color = zip(*nx.get_node_attributes(g, 'modules').items()) #if your modules are named different change here
-    nodes, size = zip(*nx.get_node_attributes(g, metric).items())
-    nodes, positions = zip(*nx.get_node_attributes(g,'modules').items())
-    #positions
-    positions=nx.circular_layout(graph) #this is defining a circluar graph, if you want a different one you change the circular part of this line
-
+    edges,weights = zip(*nx.get_edge_attributes(graph, 'weight').items())
+    nodes, color = zip(*nx.get_node_attributes(graph, 'modules').items()) #if your modules are named different change here
+    # nodes, names = zip(*nx.get_node_attributes(graph, 'label').items()) #if your modules are named different change here
+    g=graph
     #Figure size
-    plt.figure(figsize=(40,25))
-
+    plt.figure(figsize=(80,50))
 
     #draws nodes
     color = np.array(color)
-    nColormap=plt.cm.Set1 #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    n_color=len(list(set(color)))
+    # nColormap=plt.cm.Set3 #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
     cM=color.max()
     cm=color.min()
+    # get discrete colormap
+    nColormap = plt.get_cmap('Set3', n_color)
+
+    # scaling
     sz=np.array(size)
-    scale=1000/sz.max()
+    scale=15000/sz.max()
     sza=sz*scale
-    print(sz.shape)
+    # print(sz.shape)
+
     y=nx.draw_networkx_nodes(g,positions,
                            node_color=color,
                            node_size=sza,
@@ -338,71 +374,147 @@ def grace_graph(graph, metric, group, tile):
                            vmin=cm ,vmax=cM)
 
     #Styling for labels
-    nx.draw_networkx_labels(g, positions, font_size=10,
-                            font_family='sans-serif', fontweight = 'bold')
+    nx.draw_networkx_labels(g, positions,
+                            # labels = label_dict,
+                            font_size=50,
+                            font_family='sans-serif',
+                            fontweight = 'bold')
 
     #draw edges
     weights=np.array(weights)
-    eColormap=plt.cm.bwr #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
-    wt=weights*5
-    M=wt.max()
-    m=wt.min()
-    x=nx.draw_networkx_edges(g, positions, edge_list=edges, style='solid', width = wt, edge_color = wt,
+    eColormap=plt.cm.gist_rainbow #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    # scaling
+    wt=list(set(weights))
+    wt=np.array(wt)
+    wt2=-np.sort(-wt)
+    wt0=wt2[1]
+
+    escale=1/wt0
+    esza=weights*escale
+    E=list(set(esza))
+    E2=-np.sort(-np.array(E))
+    M=E2[1]
+    m=esza.min()
+
+    x=nx.draw_networkx_edges(g, positions,
+                           edge_list=edges,
+                           style='solid',
+                           width = np.square(esza)*5,
+                           edge_color = esza,
                            edge_cmap=eColormap,
                            edge_vmin=m,
                            edge_vmax=M)
 
-    #format the colorbar
-    node_bar=plt.colorbar(y, ticks=color, label='Module value')
-    # edge_bar=plt.colorbar(x)
+    #COLORBAR STUFF
+    node_bar=plt.colorbar(y, label='Module value')
+
+    tick_locs = (np.arange(n_color) + 0.5)*(n_color-1)/n_color
+    node_bar.set_ticks(tick_locs)
+
+    # set tick labels (as before)
+    node_bar.set_ticklabels(np.arange(n_color))
+
+
     sm = plt.cm.ScalarMappable(cmap=eColormap, norm=plt.Normalize(vmin = m, vmax=M))
     sm._A = []
     edge_bar=plt.colorbar(sm)
 
-    node_bar.set_label('Modularity',fontsize = 25)
-    edge_bar.set_label('Strength of edge weight',fontsize = 25)
+    for l in edge_bar.ax.yaxis.get_ticklabels():
+        l.set_size(50)
+    for l in node_bar.ax.yaxis.get_ticklabels():
+        l.set_size(50)
+        l.set_verticalalignment('center')
 
+    node_bar.set_label('Modularity',fontsize = 50)
+    edge_bar.set_label('Strength of edge weight',fontsize = 50)
+    # Final plot stuff
     plt.axis('off')
-    plt.title("Modularity and Edge Weights of Average %s Graph"%group, fontsize = 30)
-    #plt.savefig(os.path.join(basepath,"betaseries_bevel/5_analysis/modularity_circle_reward.png", format="PNG")
+
+    plt.title(title, fontsize = 100)
+    basepath='/Users/gracer/Google Drive/HCP_graph/1200/images'
+
+    plt.savefig(os.path.join(basepath,save), format="PNG")
     plt.show()
+    return()
 
 def module_fig(G, Type):
     edges,weights = zip(*nx.get_edge_attributes(G,'weight').items())
     #nodes, size = zip(*nx.get_node_attributes(G,'clustering').items())
 
     positions=nx.circular_layout(G)
-    plt.figure(figsize=(25,20))
-
+    plt.figure(figsize=(80,50))
+    ### NODES ####
     color = np.array(list(G.nodes))
-    nColormap=plt.cm.cool #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    color = np.array(color)
+    n_color=len(list(set(color)))
+    nColormap = plt.get_cmap('Set3', n_color)
     cM=color.max()
     cm=color.min()
-    nx.draw_networkx_nodes(G,positions,
+    y=nx.draw_networkx_nodes(G,positions,
                            node_color=color,
-                           #node_size=size,
+                           node_size=15000,
                            alpha=1.0,
-                           cmap= plt.cm.Set1,
+                           cmap= nColormap,
                            vmin=cm,vmax=cM )
 
     #Styling for labels
-    nx.draw_networkx_labels(G, positions, font_size=8, font_family='sans-serif')
-    # wt=np.array(weights)/5
+    nx.draw_networkx_labels(G, positions, font_size=100,
+                            font_family='sans-serif', fontweight = 'bold')
+
+    ### EDGES ####
     weights=np.array(weights)
-    wtMin=weights.min()
-    wtMax=weights.max()
-    scale=50/wtMax.max()
-    wt=weights*scale
+    # scaling
+    wt=list(set(weights))
+    wt=np.array(wt)
+    wt2=-np.sort(-wt)
+    wt0=wt2[1]
 
-    x=nx.draw_networkx_edges(G, positions, edge_list=edges,style='solid', width = wt,
-    edge_color = weights, edge_vmin=wtMin, edge_vmax=wtMax, edge_cmap=nColormap)
+    escale=1/wt0
+    esza=weights*escale
+    E=list(set(esza))
+    E2=-np.sort(-np.array(E))
+    M=E2[1]
+    m=esza.min()
 
-    sm = plt.cm.ScalarMappable(cmap=nColormap, norm=plt.Normalize(vmin = wtMin, vmax=wtMax))
+
+    eColormap=plt.cm.gist_rainbow
+
+    x=nx.draw_networkx_edges(G, positions,
+                             edge_list=edges,
+                             style='solid',
+                             width = np.square(esza*5),
+                             edge_color = weights,
+                             edge_vmin=m,
+                             edge_vmax=M,
+                             edge_cmap= eColormap)
+
+
+    node_bar=plt.colorbar(y, label='Module value')
+
+    tick_locs = (np.arange(n_color) + 0.5)*(n_color-1)/n_color
+    node_bar.set_ticks(tick_locs)
+
+    # set tick labels (as before)
+    node_bar.set_ticklabels(np.arange(n_color))
+
+
+    sm = plt.cm.ScalarMappable(cmap=eColormap, norm=plt.Normalize(vmin = m, vmax=M))
     sm._A = []
-    plt.colorbar(sm)
+    edge_bar=plt.colorbar(sm)
 
-    plt.title("Module Connectivity Weights %s"%Type, fontsize = 30)
+    for l in edge_bar.ax.yaxis.get_ticklabels():
+        l.set_size(50)
+    for l in node_bar.ax.yaxis.get_ticklabels():
+        l.set_size(50)
+        l.set_verticalalignment('center')
+
+    node_bar.set_label('Modularity',fontsize = 50)
+    edge_bar.set_label('Strength of edge weight',fontsize = 50)
+
+    plt.title("Module Connectivity Weights %s"%Type, fontsize = 100)
     plt.axis('off')
+    basepath='/Users/gracer/Google Drive/HCP_graph/1200/images'
+    plt.savefig(os.path.join(basepath,"modularity_%s.png"%(Type)), format="PNG")
     plt.show()
 
 def permuatator2(liist):
@@ -462,6 +574,125 @@ def mu_make_graphs(key, values, direction, min_cor):
     'values':vals,'graph':graph}})
 
 
+
+def corrector(x, alpha):
+    results=x[1].ravel()
+    mask = np.isfinite(results)
+    pval_corrected = np.empty(results.shape)
+    pval_corrected.fill(np.nan)
+    pval_corrected[mask] = st.stats.multitest.multipletests(results[mask],alpha=alpha,method='fdr_bh')[1]
+    p=np.reshape(pval_corrected, (100, 100))
+    print(np.nanmin(p))
+    ps = 1-p
+    print(np.nanmax(ps))
+    coor_fig(ps)
+    return(p)
+
+def coor_fig(df):
+    plt.figure(figsize=(40,25))
+    m=np.nanmin(df)
+    M=np.nanmax(df)
+    print('The max p value is %f'%M)
+    sns.heatmap(df, linewidth=0.5,
+                vmin=m, vmax=1,
+                cmap=sns.cubehelix_palette(10000),
+                cbar_kws={'ticks': [0.0, 0.2, 0.4, 0.5, 0.7, 0.8,0.975 ,1.0]})
+    return(plt.show())
+
+def inner_mod(graph, metric, group, tile, style):
+    e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
+    purr=np.percentile(w, tile)
+    print(purr)
+    g=an.threshold2(graph,purr)
+
+    edges,weights = zip(*nx.get_edge_attributes(g, 'weight').items())
+    weights=np.array(weights)
+    print(weights.min())
+
+    nodes, color = zip(*nx.get_node_attributes(g, metric).items())
+    nodes, size = zip(*nx.get_node_attributes(g, metric).items())
+    nodes, positions = zip(*nx.get_node_attributes(g,'modules').items())
+    #positions
+    if style == 'spectral':
+        positions=nx.spectral_layout(g) #this is defining a circluar graph, if you want a different one you change the circular part of this line
+    elif style == 'spring':
+        positions=nx.spring_layout(g)
+    else:
+        positions=nx.circular_layout(g)
+    #Figure size
+    plt.figure(figsize=(80,50))
+
+    #draws nodes
+    color = np.array(color)
+    colz=scipy.stats.zscore(color)
+    nColormap=plt.cm.cool #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    cM=colz.max()
+    cm=colz.min()
+
+
+    scale=15000/colz.max()
+    y=nx.draw_networkx_nodes(g,positions,
+                           node_color=colz,
+                           node_size=np.square(colz)*scale,
+                           alpha=0.8,
+                           cmap= nColormap,
+                           vmin=cm ,vmax=cM)
+
+    #Styling for labels
+    keeps=g.nodes()
+    dict_you_want = { your_key: note_dict[your_key] for your_key in keeps }
+    nx.draw_networkx_labels(g, positions, font_size=50,
+                            labels=dict_you_want,
+                            font_family='sans-serif',
+                            fontweight = 'bold')
+
+    #draw edges
+    weights=np.array(weights)
+    eColormap=plt.cm.gist_rainbow #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+    # scaling
+    wt=list(set(weights))
+    wt=np.array(wt)
+    wt2=-np.sort(-wt)
+    wt0=wt2[1]
+
+    escale=1/wt0
+    esza=weights*escale
+    E=list(set(esza))
+    E2=-np.sort(-np.array(E))
+    M=E2[1]
+    m=esza.min()
+
+    x=nx.draw_networkx_edges(g, positions,
+                           edge_list=edges,
+                           style='solid',
+                           width = np.square(esza)*5,
+                           edge_color = esza,
+                           edge_cmap=eColormap,
+                           edge_vmin=m,
+                           edge_vmax=M)
+
+    #format the colorbar
+    node_bar=plt.colorbar(y, label='Module value')
+
+    sm = plt.cm.ScalarMappable(cmap=eColormap, norm=plt.Normalize(vmin = m, vmax=M))
+    sm._A = []
+    edge_bar=plt.colorbar(sm)
+
+
+    for l in edge_bar.ax.yaxis.get_ticklabels():
+        l.set_size(50)
+    for l in node_bar.ax.yaxis.get_ticklabels():
+        l.set_size(50)
+
+    node_bar.set_label('%s'%metric,fontsize = 50)
+    edge_bar.set_label('Strength of edge weight',fontsize = 50)
+
+    plt.axis('off')
+    plt.title("%s and edge weights of \n average %s graph"%(metric, group), fontsize = 100)
+    basepath='/Users/gracer/Google Drive/HCP_graph/1200/images'
+
+    plt.savefig(os.path.join(basepath,"%s_%s_%s.png"%(metric,style,group)), format="PNG")
+    plt.show()
 
 def participation_coef(W, ci, degree='undirected'):
     '''

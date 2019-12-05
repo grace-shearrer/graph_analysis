@@ -20,17 +20,18 @@ summary_dict=an.onetoughjar(os.path.join(basepath,'tmp','summary_dict_11-14-2019
 # summary_dict['NR']['no']['modules']['partition']
 summary_dict['NR']['no']['graphs'].nodes(data=True)
 
-# an.grace_graph(summary_dict['NR']['no']['graphs'], 'clustering', 'Normal weight', 1)
-# an.grace_graph(summary_dict['NR']['ov']['graphs'], 'clustering', 'Overweight', 1)
-an.grace_graph(summary_dict['NR']['ob']['graphs'], 'clustering', 'Obese', 1)
+# x=an.grace_graph(summary_dict['NR']['no']['graphs'], 'centrality', 'Normal weight', 1)
+# y=an.grace_graph(summary_dict['NR']['ov']['graphs'], 'centrality', 'Overweight', 1)
+# z=an.grace_graph(summary_dict['NR']['ob']['graphs'], 'centrality', 'Obese', 1)
 
+# basepath='/Users/gracer/Google Drive/HCP_graph/1200/datasets/'
+#Load data from pickle if needed
+# summary_dict=an.onetoughjar(os.path.join(basepath,'tmp','summary_dict_11-14-2019_04-33-33'))
 for key, value in summary_dict.items():
     for k,v in value.items():
         # community.induced_graph(partition dictionary, graph)
          comm_graph = community.induced_graph(v['modules']['partition'], v['graphs'])
          v.update(comm_graph = comm_graph)
-
-# an.module_fig(summary_dict['NR']['no']['comm_graphs'])
-# an.module_fig(summary_dict['NR']['no']['comm_graph'], 'Normal')
-# an.module_fig(summary_dict['NR']['ov']['comm_graph'], 'Overweight')
-# an.module_fig(summary_dict['NR']['ob']['comm_graph'], 'Obese')
+an.module_fig(summary_dict['NR']['no']['comm_graph'], 'Normal')
+an.module_fig(summary_dict['NR']['ov']['comm_graph'], 'Overweight')
+an.module_fig(summary_dict['NR']['ob']['comm_graph'], 'Obese')
