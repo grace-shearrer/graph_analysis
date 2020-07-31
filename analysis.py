@@ -569,12 +569,20 @@ def mu_make_graphs(key, values, direction, min_cor):
     ########################################
     print('start zdegree')
     zdegree=bct.module_degree_zscore(W, ci, flag=0)
+    zzip=dict(zip(list(vals), zdegree))
     ########################################
     nx.set_node_attributes(G, centrality, 'centrality')
     nx.set_node_attributes(G, clustering, 'clustering')
     nx.set_node_attributes(G, pc_dict, 'PC')
     nx.set_node_attributes(G, partition, 'modules')
     ########################################
+    zD = {}
+    for node, mod in nx.get_node_attributes(G,'modules').items():
+        zD[node]=zzip[mod]
+    print(zD)
+    nx.set_node_attributes(G, zD, 'zDegree')
+    ########################################
+
     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
     'values':vals,'graph':graph,'zdegree':zdegree}})
 
@@ -744,3 +752,38 @@ def participation_coef(W, ci, degree='undirected'):
     P[np.where(np.logical_not(Ko))] = 0
 
     return P
+
+
+def mod_world(dicti,):
+    mod_dict={'MZ':{'no':{}, 'ov':{}, 'ob':{}},
+           'DZ':{'no':{}, 'ov':{}, 'ob':{}},
+           'NR':{'no':{}, 'ov':{}, 'ob':{}}
+         }
+    for key, value in dicti.items():
+        for subkey, subvalue in value.items():
+            if subkey == 'modules':
+                print(subvalue.keys())
+                dicti[key][subkey]['Q']=community.modularity(subvalue['partition'], subvalue['graph'], weight='weight')
+
+    edge_btw=nx.edge_betweenness_centrality(dicti['graphs'], normalized=True, weight='weight')
+    dicti['edge_btw']=edge_btw
+    nx.set_edge_attributes(dicti['graphs'], edge_btw, 'betweenness')
+
+    for key, value in dicti.items():
+        for k,v in value.items():
+            unique, counts = np.unique(summary_dict[key][k]['modules']['values'], return_counts=True)
+            for i in unique:
+                mod_dict[key][k].update({i:[]})
+            for q, w in summary_dict[key][k]['modules']['partition'].items():
+                mod_dict[key][k][w].append(q)
+    return(dicti, mod_dict)
+
+# for key, values in summary_dict.items():
+#     print(key)
+#     for k,v in values.items():
+#         print(k)
+#         unique, counts = np.unique(summary_dict[key][k]['modules']['values'], return_counts=True)
+#         for i in unique:
+#             mod_dict[key][k].update({i:[]})
+#         for q, w in summary_dict[key][k]['modules']['partition'].items():
+#             mod_dict[key][k][w].append(q)
