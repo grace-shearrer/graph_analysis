@@ -800,6 +800,18 @@ def df_maker(subgraph_dict, group):
 
 
 
+# list1=[mean_dict['MZ'],'MZ','positive',0]
+# list2=[mean_dict['DZ'], 'DZ', 'positive',0]
+# list3=[mean_dict['NR'], 'NR','positive',0]
+# list1=[summary_dict['NR']['no'],group]
+
+def permuatator4(liist):
+    dicti=liist[0]
+    group=liist[1]
+    [dicti,mod_dicti]=mod_world(dicti)
+    subgraph_dict=sub_G(dicti, mod_dicti)
+    modstat_dict=df_maker(subgraph_dict, group)
+    return(modstat_dict)
 
 # for key, values in summary_dict.items():
 #     print(key)
