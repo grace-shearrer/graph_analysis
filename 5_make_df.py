@@ -12,6 +12,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import community
 import analysis as an
+import glob
 
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 ###### Label specific #######
@@ -31,14 +32,3 @@ latest_file = max(list_of_files, key=os.path.getctime)
 print(latest_file)
 
 summary_dict=an.onetoughjar(latest_file)
-
-def mod_world(dicti,):
-    for key, value in dicti.items():
-        for subkey, subvalue in value.items():
-            if subkey == 'modules':
-                print(subvalue.keys())
-                dicti[key][subkey]['Q']=community.modularity(subvalue['partition'], subvalue['graph'], weight='weight')
-
-    edge_btw=nx.edge_betweenness_centrality(dicti['graphs'], normalized=True, weight='weight')
-    dicti['edge_btw']=edge_btw
-    nx.set_edge_attributes(dicti['graphs'], edge_btw, 'betweenness')

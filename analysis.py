@@ -557,10 +557,14 @@ def mu_make_graphs(key, values, direction, min_cor):
     vals=np.array(vals)
     ci=np.reshape(vals, (100, 1))
     W=np.array(cor_matrix)
-    PC=participation_coef(W=W, ci=ci, degree="undirected")
+    # PC=participation_coef(W=W, ci=ci, degree="undirected")
+    PC=bct.participation_coef_sign(W,ci)
+    PC=list(PC)
+    PCpos=PC[0]
     pc_dict={}
-    for i in range(len(PC)):
-        pc_dict[i]=PC[i]
+    for i in range(len(PCpos)):
+        pc_dict[i]=PCpos[i]
+        # print(pc_dict)
     clustering = nx.clustering(tG, weight=True)
     # clustering_dict[key]=clustering
     ########################################
@@ -583,7 +587,7 @@ def mu_make_graphs(key, values, direction, min_cor):
     nx.set_node_attributes(G, zD, 'zDegree')
     ########################################
 
-    return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
+    return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition,
     'values':vals,'graph':graph,'zdegree':zdegree}})
 
 
@@ -754,29 +758,48 @@ def participation_coef(W, ci, degree='undirected'):
     return P
 
 
-def mod_world(dicti,):
-    mod_dict={'MZ':{'no':{}, 'ov':{}, 'ob':{}},
-           'DZ':{'no':{}, 'ov':{}, 'ob':{}},
-           'NR':{'no':{}, 'ov':{}, 'ob':{}}
-         }
+def mod_world(dicti):
+    mod_dict={}
     for key, value in dicti.items():
-        for subkey, subvalue in value.items():
-            if subkey == 'modules':
-                print(subvalue.keys())
-                dicti[key][subkey]['Q']=community.modularity(subvalue['partition'], subvalue['graph'], weight='weight')
+        if key == 'modules':
+            dicti[key]['Q']=community.modularity(value['partition'], value['graph'], weight='weight')
 
     edge_btw=nx.edge_betweenness_centrality(dicti['graphs'], normalized=True, weight='weight')
     dicti['edge_btw']=edge_btw
     nx.set_edge_attributes(dicti['graphs'], edge_btw, 'betweenness')
 
-    for key, value in dicti.items():
-        for k,v in value.items():
-            unique, counts = np.unique(summary_dict[key][k]['modules']['values'], return_counts=True)
-            for i in unique:
-                mod_dict[key][k].update({i:[]})
-            for q, w in summary_dict[key][k]['modules']['partition'].items():
-                mod_dict[key][k][w].append(q)
+    unique, counts = np.unique(dicti['modules']['values'], return_counts=True)
+    for i in unique:
+        mod_dict.update({i:[]})
+    for q, w in dicti['modules']['partition'].items():
+        mod_dict[w].append(q)
     return(dicti, mod_dict)
+
+
+def sub_G(dicti, mod_dicti):
+    subgraph_dict={}
+    for key, value in mod_dicti.items():
+        print(key)
+        G=dicti['graphs']
+        H = G.subgraph(value).copy()
+        subgraph_dict[key]=H
+    return(subgraph_dict)
+
+
+def df_maker(subgraph_dict, group):
+    modstat_dict={}
+    for mod, nodes in subgraph_dict.items():
+        print(mod)
+        modstat_dict[mod]={}
+        for i in nodes:
+            print(i)
+            modstat_dict[mod].update({i:[]})
+        modstat_dict[mod]=pd.DataFrame.from_dict(dict(subgraph_dict[mod].nodes(data=True)), orient='index')
+        modstat_dict[mod]['group']=group
+    return(modstat_dict)
+
+
+
 
 # for key, values in summary_dict.items():
 #     print(key)

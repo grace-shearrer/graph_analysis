@@ -12,7 +12,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import community
 import analysis as an
-
+import glob
 
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 p = os.path.join(basepath,'tmp','5_summary_dict*')
