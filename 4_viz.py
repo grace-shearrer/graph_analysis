@@ -14,7 +14,7 @@ import community
 import analysis as an
 
 
-basepath='/Users/gracer/Google Drive/HCP_graph/1200/datasets/'
+basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 summary_dict=an.onetoughjar(os.path.join(basepath,'tmp','summary_dict_11-14-2019_04-33-33'))
 # dict_keys(['mean_FC', 'graphs', 'clustering_coeff', 'btn_centrality', 'PC', 'modules'])
 # summary_dict['NR']['no']['modules']['partition']
@@ -32,6 +32,6 @@ for key, value in summary_dict.items():
         # community.induced_graph(partition dictionary, graph)
          comm_graph = community.induced_graph(v['modules']['partition'], v['graphs'])
          v.update(comm_graph = comm_graph)
-an.module_fig(summary_dict['NR']['no']['comm_graph'], 'Normal')
-an.module_fig(summary_dict['NR']['ov']['comm_graph'], 'Overweight')
-an.module_fig(summary_dict['NR']['ob']['comm_graph'], 'Obese')
+an.module_fig(summary_dict['NR']['no']['comm_graph'], 'Normal', basepath)
+an.module_fig(summary_dict['NR']['ov']['comm_graph'], 'Overweight', basepath)
+an.module_fig(summary_dict['NR']['ob']['comm_graph'], 'Obese', basepath)

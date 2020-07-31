@@ -10,7 +10,7 @@ from multiprocessing import Pool
 import analysis as an
 import  pdb
 
-basepath='/Users/gracer/Google Drive/HCP_graph/1200/datasets/HCP_PTN1200/graph_analysis/'
+basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/HCP_PTN1200/graph_analysis/'
 file_dict={'MZ':{'no':{},'ov':{},'ob':{}},'DZ':{'no':{},'ov':{},'ob':{}},'NR':{'no':{},'ov':{},'ob':{}}}
 #read in all the data
 for key, value in file_dict.items():
@@ -26,9 +26,9 @@ for key, value in file_dict.items():
                 v[sub]=pd.read_csv(fil, sep=',', index_col=False, header=None)
 
 
-an.adillyofapickle('/Users/gracer/Google Drive/HCP_graph/1200/datasets',file_dict,'2_file_dict')
+an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',file_dict,'2_file_dict')
 
-basepath='/Users/gracer/Google Drive/HCP_graph/1200/datasets/'
+basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 
 file_dict=an.onetoughjar(os.path.join(basepath,'tmp','file_dict_11-14-2019_10-07-24'))
 
@@ -50,4 +50,4 @@ if __name__ == '__main__':
 
 
     save_dict={'MZ':MZ,'DZ':DZ,'NR':NR}
-    an.adillyofapickle('/Users/gracer/Google Drive/HCP_graph/1200/datasets',save_dict,'3_save_dict')
+    an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict,'3_save_dict')

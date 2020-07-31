@@ -4,7 +4,7 @@ import os
 import multiprocessing
 from multiprocessing import Pool
 
-basepath='/Users/gracer/Google Drive/HCP_graph/1200/datasets/'
+basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 #Load data from pickle if needed
 file_dict=an.onetoughjar(os.path.join(basepath,'tmp','file_dict_11-14-2019_10-07-24'))
 
@@ -15,7 +15,7 @@ for key, value in file_dict.items():
         print(k)
         mean_dict[key][k]=an.make_total_graphs(v)
 
-an.adillyofapickle('/Users/gracer/Google Drive/HCP_graph/1200/datasets',mean_dict,'4_mean_dict')
+an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',mean_dict,'4_mean_dict')
 
 list1=[mean_dict['MZ'],'MZ','positive',0]
 list2=[mean_dict['DZ'], 'DZ', 'positive',0]
@@ -37,4 +37,4 @@ if __name__ == '__main__':
 
 
     summary_dict={'MZ':MZ,'DZ':DZ,'NR':NR}
-    an.adillyofapickle('/Users/gracer/Google Drive/HCP_graph/1200/datasets',summary_dict,'5_summary_dict')
+    an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',summary_dict,'5_summary_dict')

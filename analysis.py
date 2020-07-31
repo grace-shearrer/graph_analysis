@@ -13,13 +13,13 @@ import statistics
 from scipy import stats
 import community
 import matplotlib
-# matplotlib.use("Qt5Agg")
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 
 
 #from https://wiki.biac.duke.edu/biac:analysis:resting_pipeline
 import numpy.ma
-import nibabel
+#import nibabel
 from scipy import signal
 import sys, subprocess
 import string, random
@@ -312,7 +312,8 @@ def threshold2(G, min_correlation):
             H.remove_edge(stock1, stock2)
     return(H)
 
-def grace_graph(graph, group,  **kwargs):
+def grace_graph(graph, group, basepath ,**kwargs):
+    fs=50
     e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
     if bool(kwargs) == False:
         positions = nx.circular_layout(graph)
@@ -362,7 +363,7 @@ def grace_graph(graph, group,  **kwargs):
 
     # scaling
     sz=np.array(size)
-    scale=15000/sz.max()
+    scale=150/sz.max()
     sza=sz*scale
     # print(sz.shape)
 
@@ -376,7 +377,7 @@ def grace_graph(graph, group,  **kwargs):
     #Styling for labels
     nx.draw_networkx_labels(g, positions,
                             # labels = label_dict,
-                            font_size=50,
+                            font_size=fs,
                             font_family='sans-serif',
                             fontweight = 'bold')
 
@@ -420,24 +421,24 @@ def grace_graph(graph, group,  **kwargs):
     edge_bar=plt.colorbar(sm)
 
     for l in edge_bar.ax.yaxis.get_ticklabels():
-        l.set_size(50)
+        l.set_size(fs)
     for l in node_bar.ax.yaxis.get_ticklabels():
-        l.set_size(50)
+        l.set_size(fs)
         l.set_verticalalignment('center')
 
-    node_bar.set_label('Modularity',fontsize = 50)
-    edge_bar.set_label('Strength of edge weight',fontsize = 50)
+    node_bar.set_label('Modularity',fontsize = fs)
+    edge_bar.set_label('Strength of edge weight',fontsize = fs)
     # Final plot stuff
     plt.axis('off')
 
-    plt.title(title, fontsize = 100)
-    basepath='/Users/gracer/Google Drive/HCP_graph/1200/images'
+    plt.title(title, fontsize = fs*2)
+    basepath=basepath
 
     plt.savefig(os.path.join(basepath,save), format="PNG")
     plt.show()
     return()
 
-def module_fig(G, Type):
+def module_fig(G, Type, basepath):
     edges,weights = zip(*nx.get_edge_attributes(G,'weight').items())
     #nodes, size = zip(*nx.get_node_attributes(G,'clustering').items())
 
@@ -452,13 +453,13 @@ def module_fig(G, Type):
     cm=color.min()
     y=nx.draw_networkx_nodes(G,positions,
                            node_color=color,
-                           node_size=15000,
+                           node_size=1500,
                            alpha=1.0,
                            cmap= nColormap,
                            vmin=cm,vmax=cM )
 
     #Styling for labels
-    nx.draw_networkx_labels(G, positions, font_size=100,
+    nx.draw_networkx_labels(G, positions, font_size=25,
                             font_family='sans-serif', fontweight = 'bold')
 
     ### EDGES ####
@@ -503,17 +504,17 @@ def module_fig(G, Type):
     edge_bar=plt.colorbar(sm)
 
     for l in edge_bar.ax.yaxis.get_ticklabels():
-        l.set_size(50)
+        l.set_size(35)
     for l in node_bar.ax.yaxis.get_ticklabels():
-        l.set_size(50)
+        l.set_size(35)
         l.set_verticalalignment('center')
 
-    node_bar.set_label('Modularity',fontsize = 50)
-    edge_bar.set_label('Strength of edge weight',fontsize = 50)
+    node_bar.set_label('Modularity',fontsize = 25)
+    edge_bar.set_label('Strength of edge weight',fontsize = 25)
 
-    plt.title("Module Connectivity Weights %s"%Type, fontsize = 100)
+    plt.title("Module Connectivity Weights %s"%Type, fontsize = 50)
     plt.axis('off')
-    basepath='/Users/gracer/Google Drive/HCP_graph/1200/images'
+    basepath= os.path.join(basepath,'images')
     plt.savefig(os.path.join(basepath,"modularity_%s.png"%(Type)), format="PNG")
     plt.show()
 
@@ -573,7 +574,9 @@ def mu_make_graphs(key, values, direction, min_cor):
     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
     'values':vals,'graph':graph}})
 
-
+# def intr_mod_deg(key, values, direction, min_cor):
+# bct.module_degree_zscore(W, ci, flag=0)¶
+# The within-module degree z-score is a within-module version of degree centrality.
 
 def corrector(x, alpha):
     results=x[1].ravel()

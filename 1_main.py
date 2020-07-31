@@ -74,8 +74,7 @@ if __name__ == '__main__':
 
     pool_size =3
     pool = multiprocessing.Pool(processes=pool_size,
-                                initializer=an.start_process,
-                                )
+                                initializer=an.start_process)
 
     [MZ,DZ,NR] = pool.map(an.permuatator1, [list1, list2, list3])
     pool.close() # no more tasks
