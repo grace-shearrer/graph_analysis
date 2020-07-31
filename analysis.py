@@ -32,6 +32,7 @@ from scipy import ndimage as nd
 import pdb
 import multiprocessing
 from multiprocessing import Pool
+import bct as bct
 
 datefmt='%m-%d-%Y_%I-%M-%S'
 logging.basicConfig(format='%(asctime)s %(message)s ', datefmt=datefmt, level=logging.INFO)
@@ -566,17 +567,17 @@ def mu_make_graphs(key, values, direction, min_cor):
     centrality = nx.betweenness_centrality(tG, weight=True)
     # centrality_dict[key]=centrality
     ########################################
+    print('start zdegree')
+    zdegree=bct.module_degree_zscore(W, ci, flag=0)
+    ########################################
     nx.set_node_attributes(G, centrality, 'centrality')
     nx.set_node_attributes(G, clustering, 'clustering')
     nx.set_node_attributes(G, pc_dict, 'PC')
     nx.set_node_attributes(G, partition, 'modules')
     ########################################
     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PC, 'modules':{'partition':partition,
-    'values':vals,'graph':graph}})
+    'values':vals,'graph':graph,'zdegree':zdegree}})
 
-# def intr_mod_deg(key, values, direction, min_cor):
-# bct.module_degree_zscore(W, ci, flag=0)¶
-# The within-module degree z-score is a within-module version of degree centrality.
 
 def corrector(x, alpha):
     results=x[1].ravel()

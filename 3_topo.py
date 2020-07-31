@@ -6,7 +6,12 @@ from multiprocessing import Pool
 
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 #Load data from pickle if needed
-file_dict=an.onetoughjar(os.path.join(basepath,'tmp','file_dict_11-14-2019_10-07-24'))
+p = os.path.join(basepath,'tmp','2_file_dict*')
+list_of_files = glob.glob(p) # * means all if need specific format then *.csv
+latest_file = max(list_of_files, key=os.path.getctime)
+print(latest_file)
+
+file_dict=an.onetoughjar(latest_file)
 
 mean_dict={'MZ':{'no':{},'ov':{},'ob':{}},'DZ':{'no':{},'ov':{},'ob':{}},'NR':{'no':{},'ov':{},'ob':{}}}
 for key, value in file_dict.items():

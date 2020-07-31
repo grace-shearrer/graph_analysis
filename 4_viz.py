@@ -15,7 +15,13 @@ import analysis as an
 
 
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
-summary_dict=an.onetoughjar(os.path.join(basepath,'tmp','summary_dict_11-14-2019_04-33-33'))
+p = os.path.join(basepath,'tmp','5_summary_dict*')
+list_of_files = glob.glob(p) # * means all if need specific format then *.csv
+latest_file = max(list_of_files, key=os.path.getctime)
+print(latest_file)
+
+
+summary_dict=an.onetoughjar(latest_file)
 # dict_keys(['mean_FC', 'graphs', 'clustering_coeff', 'btn_centrality', 'PC', 'modules'])
 # summary_dict['NR']['no']['modules']['partition']
 summary_dict['NR']['no']['graphs'].nodes(data=True)
