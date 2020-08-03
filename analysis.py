@@ -228,7 +228,7 @@ def make_graphs(dict_o_data, direction, min_cor):
         G = nx.from_numpy_matrix(cor_matrix)
         tG = threshold(G, direction, min_cor)
         ########################################
-        (partition,vals,graph)=ges(tG)
+        (partition,vals,graph)=ges(tG,'modules')
         partition_dict[key]=(partition,vals)
         vals=np.array(vals)
         ci=np.reshape(vals, (100, 1))
@@ -300,10 +300,10 @@ def make_total_graphs(dict_o_data):
     return(mu)
 
 
-def ges(mu):
+def ges(mu,name):
     partition = community.best_partition(mu)
     vals = list(partition.values())
-    nx.set_node_attributes(mu, partition, 'modules')
+    nx.set_node_attributes(mu, partition, name)
     return((partition,vals, mu))
 
 def threshold2(G, min_correlation):
@@ -552,7 +552,7 @@ def mu_make_graphs(key, values, direction, min_cor):
     G = nx.from_numpy_matrix(cor_matrix)
     tG = threshold(G, direction, min_cor)
     ########################################
-    (partition,vals,graph)=ges(tG)
+    (partition,vals,graph)=ges(tG,'modules')
     # partition_dict[key]=(partition,vals)
     vals=np.array(vals)
     ci=np.reshape(vals, (100, 1))
@@ -782,9 +782,27 @@ def sub_G(dicti, mod_dicti):
         print(key)
         G=dicti['graphs']
         H = G.subgraph(value).copy()
+        H = zed(H)
         subgraph_dict[key]=H
     return(subgraph_dict)
 
+def zed(G):
+    (partition,vals,graph)=ges(G, 'sub_modules')
+    W=nx.to_numpy_matrix(graph)
+    vals=np.array(vals)
+    ci=np.reshape(vals, (len(vals), 1))
+    print('start zdegree')
+    sub_zdegree=bct.module_degree_zscore(np.array(W), vals, flag=0)
+    zzip=dict(zip(list(vals), sub_zdegree))
+    ########################################
+    nx.set_node_attributes(G, partition, 'sub_modules')
+    ########################################
+    zD = {}
+    for node, mod in nx.get_node_attributes(G,'sub_modules').items():
+        zD[node]=zzip[mod]
+    print(zD)
+    nx.set_node_attributes(G, zD, 'sub_zDegree')
+    return(G)
 
 def df_maker(subgraph_dict, group):
     modstat_dict={}
@@ -805,12 +823,32 @@ def df_maker(subgraph_dict, group):
 # list3=[mean_dict['NR'], 'NR','positive',0]
 # list1=[summary_dict['NR']['no'],group]
 
+
+def hubby(_df):
+    _df.loc[_df['zDegree'] >= 2.5 , 'hub'] = 'yes'
+    _df.loc[_df['zDegree'] < 2.5 , 'hub'] = 'no'
+
+def node_type(_df):
+    _df.loc[(_df['hub'] == 'yes') & (_df['PC'] > 0) & (_df['PC'] < 0.3), 'node_type'] = 'provincial'
+    _df.loc[(_df['hub'] == 'yes') & (_df['PC'] >= 0.3) & (_df['PC'] < 0.75), 'node_type'] = 'connector'
+    _df.loc[(_df['hub'] == 'yes') & (_df['PC'] >= 0.75) & (_df['PC'] < 1), 'node_type'] = 'kinless'
+
+    _df.loc[(_df['hub'] == 'no') & (_df['PC'] > 0) & (_df['PC'] < 0.05), 'node_type'] = 'ultra-peripheral'
+    _df.loc[(_df['hub'] == 'no') & (_df['PC'] >= 0.05) & (_df['PC'] < 0.62), 'node_type'] = 'peripheral'
+    _df.loc[(_df['hub'] == 'no') & (_df['PC'] >= 0.62) & (_df['PC'] < 0.8), 'node_type'] = 'connector'
+    _df.loc[(_df['hub'] == 'no') & (_df['PC'] >= 0.8) & (_df['PC'] < 1), 'node_type'] = 'kinless'
+
+
+
 def permuatator4(liist):
     dicti=liist[0]
     group=liist[1]
     [dicti,mod_dicti]=mod_world(dicti)
     subgraph_dict=sub_G(dicti, mod_dicti)
     modstat_dict=df_maker(subgraph_dict, group)
+    for i in range(len(list(modstat_dict.values()))):
+        hubby(modstat_dict[i])
+        node_type(modstat_dict[i])
     return(modstat_dict)
 
 # for key, values in summary_dict.items():
