@@ -54,3 +54,15 @@ if __name__ == '__main__':
 
     submod_dict={'no':no,'ov':ov,'ob':ob}
     an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',submod_dict,'6_submod_dict')
+    z={}
+    for group, dat in submod_dict.items():
+        print(group)
+        z[group]={}
+        for module, data in dat.items():
+            print(module)
+            z[group][module]=data.join(labels)
+    no=pd.concat(list(z['no'].values()))
+    ov=pd.concat(list(z['ov'].values()))
+    ob=pd.concat(list(z['ob'].values()))
+    total=pd.concat([no,ov,ob])
+    total.to_csv(os.path.join(basepath,'tmp','submodule_data.csv'), sep=',')

@@ -825,8 +825,8 @@ def df_maker(subgraph_dict, group):
 
 
 def hubby(_df):
-    _df.loc[_df['zDegree'] >= 2.5 , 'hub'] = 'yes'
-    _df.loc[_df['zDegree'] < 2.5 , 'hub'] = 'no'
+    _df.loc[abs(_df['sub_zDegree']) >= 2.5 , 'hub'] = 'yes'
+    _df.loc[abs(_df['sub_zDegree'] < 2.5 ), 'hub'] = 'no'
 
 def node_type(_df):
     _df.loc[(_df['hub'] == 'yes') & (_df['PC'] > 0) & (_df['PC'] < 0.3), 'node_type'] = 'provincial'
