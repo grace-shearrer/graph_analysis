@@ -1,0 +1,357 @@
+---
+title: "HCP BMI"
+output: html_notebook
+---
+
+# Libraries
+```{r}
+library(tidyverse)
+library(magrittr)
+library(purrr)
+library(plyr)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+# library(formattable)
+library(gplots)
+library(lm.beta)
+library(mgcv)
+library(lsmeans)
+library(psych)
+library(multcomp)
+library(gridExtra)
+library(grid)
+```
+
+
+# Functions
+```{r}
+cbPalette <- c( "#E69F00", "#56B4E9",  "#CC79A7")
+violin <- function(d, x, y){
+  plot1<-ggplot(d, aes(factor(x), y)) + 
+    geom_violin(aes(fill = x),stat = "ydensity",draw_quantiles = c(0.25, 0.5, 0.75))+scale_fill_manual(values=cbPalette)+theme_classic()
+  return(plot1)
+}
+```
+
+# Demographics
+```{r}
+demos<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/demos.csv", header=T, sep=",")
+head(demos)
+demos$Age_c<-scale(demos$Age_in_Yrs, scale = FALSE)
+demos$HBA1c_c<-scale(demos$HbA1C, scale = FALSE)
+demos$group <- ordered(demos$group, levels = c("no", "ov", "ob"))
+
+demos$race_eth[demos$Race == "White" & demos$Ethnicity == "Hispanic/Latino" ] <- "White and Hispanic"
+demos$race_eth[demos$Race == "Black or African Am." & demos$Ethnicity =="Hispanic/Latino" ] <- "Black or African American and Hispanic"
+demos$race_eth[demos$Race == "Am. Indian/Alaskan Nat." & demos$Ethnicity =="Hispanic/Latino" ] <- "Native American and Hispanic"
+demos$race_eth[demos$Race == "Asian/Nat. Hawaiian/Othr Pacific Is." & demos$Ethnicity =="Hispanic/Latino" ] <- "Asian and Hispanic"
+demos$race_eth[demos$Race == "More than one" & demos$Ethnicity =="Hispanic/Latino" ] <- "Multi-racial and Hispanic"
+demos$race_eth[demos$Race == "Unknown or Not Reported" & demos$Ethnicity =="Hispanic/Latino" ] <- "Unknown or not reported and Hispanic"
+
+demos$race_eth[demos$Race == "White" &demos$Ethnicity == "Not Hispanic/Latino"] <- "White"
+demos$race_eth[demos$Race == "Black or African Am." & demos$Ethnicity =="Not Hispanic/Latino" ] <- "Black or African American"
+demos$race_eth[demos$Race == "Am. Indian/Alaskan Nat." & demos$Ethnicity =="Not Hispanic/Latino" ] <- "Native American"
+demos$race_eth[demos$Race == "Asian/Nat. Hawaiian/Othr Pacific Is." & demos$Ethnicity == "Not Hispanic/Latino"] <- "Asian"
+demos$race_eth[demos$Race == "More than one" & demos$Ethnicity =="Not Hispanic/Latino" ] <- "Multi-racial"
+demos$race_eth[demos$Race == "Unknown or Not Reported" & demos$Ethnicity =="Not Hispanic/Latino" ] <- "Unknown or not reported"
+
+demos$race_eth[demos$Race == "White" & demos$Ethnicity =="Unknown or Not Reported"] <- "White"
+demos$race_eth[demos$Race == "Black or African Am." & demos$Ethnicity =="Unknown or Not Reported"] <- "Black or African American"
+demos$race_eth[demos$Race == "Am. Indian/Alaskan Nat." & demos$Ethnicity =="Unknown or Not Reported" ] <- "Native American"
+demos$race_eth[demos$Race == "Asian/Nat. Hawaiian/Othr Pacific Is." & demos$Ethnicity =="Unknown or Not Reported"] <- "Asian"
+demos$race_eth[demos$Race == "More than one" & demos$Ethnicity =="Unknown or Not Reported" ] <- "Multi-racial"
+demos$race_eth[demos$Race == "Unknown or Not Reported" & demos$Ethnicity =="Unknown or Not Reported" ] <- "Unknown or not reported"
+
+demos$race_eth <- ordered(demos$race_eth, levels = c("White", "Black or African American"  , "Asian" ,
+                                             "Multi-racial" , "Unknown or not reported and Hispanic","Multi-racial and Hispanic",
+                                             "Black or African American and Hispanic", "White and Hispanic"))
+
+
+```
+# Unresitricted data
+```{r}
+unres<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/unrestricted_gshearrer_4_19_2018_11_31_37.csv", header=T, sep=",")
+myvars<-c("Subject","Gender")
+unres<-unres[myvars]
+unres$sub<-unres$Subject
+head(unres)
+```
+
+# Graph data
+```{r}
+graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data.csv", sep=",", header=T)
+head(graph_df)
+graph_df$group <- factor(graph_df$group, levels = c("normal","overweight","obese"))
+```
+
+# Individual data
+```{r}
+setwd("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp")
+
+# Reading in all the data from python 
+tbl <- 
+  list.files(pattern = "*_per_sub.csv") %>% 
+  map_df(~read_csv(.))
+
+dim(tbl)
+
+fc_tbl <- 
+  list.files(pattern = "*FC.csv") %>% 
+  map_df(~read_csv(.))
+
+dim(fc_tbl)
+
+tbl<-join(tbl,fc_tbl)
+```
+# joining individual sub data 
+```{r}
+data<-join(tbl,demos)
+dim(data)
+# names(data)
+data<-join(data, unres)
+dim(data)
+```
+# Cleanup, center, ect
+```{r}
+cols <- c("sub","Gender" ,"ZygosityGT", "Ethnicity", "Mother_ID","Father_ID","group","race_eth", "measure")
+
+data %<>% mutate_at(cols, funs(factor(.)))
+str(data[100:114])
+
+data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
+
+```
+## Contrasts for demographics
+```{r}
+dat<-data[!duplicated(data[,c('sub')]),]
+levels(dat$group)    
+levels(dat$race_eth)
+```
+# Covariates
+## Age
+```{r}
+dm1<-lm(Age_c~group, data=dat)
+lsq_dm1 = lsmeans(dm1, "group")
+contrast(lsq_dm1, cons, adjust='sidak')
+
+violin(dat,dat$group,dat$Age_c)
+describeBy(dat$Age_in_Yrs, dat$group)
+## No difference in age 
+```
+
+#BMI
+```{r}
+dm2<-lm(BMI~group, data=dat)
+lsq_dm2 = lsmeans(dm2, "group")
+contrast(lsq_dm2, cons, adjust='sidak')
+## Sanity check difference between the groups
+violin(dat,dat$group,dat$BMI)
+describeBy(dat$BMI, dat$group)
+```
+
+#HBA1c
+```{r}
+dm3<-lm(HBA1c_c~group, data=dat)
+lsq_dm3 = lsmeans(dm3, "group")
+contrast(lsq_dm3, cons, adjust='sidak')
+
+violin(dat,dat$group,dat$HbA1C)
+describeBy(dat$HbA1C, dat$group)
+```
+
+
+
+
+
+## sex
+```{r}
+chisq.test(table(dat$group, dat$Gender))
+tapply(dat$group, dat$Gender, summary)
+
+balloonplot(table(dat$group, dat$Gender), main ="Gender Frequencies", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, colmar=5, dotcolor=cbPalette)
+```
+
+## Race
+```{r}
+chisq.test(table(dat$group, dat$race_eth))
+tapply(dat$group, dat$race_eth, summary)
+
+balloonplot(table(dat$group, dat$race_eth), main ="Racial/Ethnic Frequencies", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
+```
+
+# Models
+```{r}
+fit_function<-function(y,data){
+  fit<-lm(y~group+Age_c+HBA1c_c+Gender+race_eth+FC, data=data)
+  test.emm <- emmeans(fit, "group")
+  contest<-emmeans(test.emm, pairwise ~ group)
+  test.emm.s <- update(contest$contrasts, infer = c(TRUE, TRUE))
+  return(summary(test.emm.s))
+}
+
+dfer<-function(X,Y){
+  df<-data.frame(X,Y, stringsAsFactors=FALSE)
+  return(df)
+}
+
+```
+
+## clustering
+```{r}
+cluster<-subset(data, data$measure == "cluster")
+
+clus_vals<-apply(cluster[2:101], FUN=fit_function, MARGIN = 2 ,data=cluster)
+indx<-names(clus_vals)
+
+l <- list()
+for (i in seq(1, length(clus_vals), by= 1)){
+  print(paste("start", i))
+  df <- dfer(indx[i],clus_vals[i])
+  colnames(df) <- c("IC", "contrast", "estimate","SE","df", "lower.CL", "upper.CL", "t.ratio", "p.value")
+  l[[i]] <-df
+}
+
+df_cluster<-bind_rows(l)
+df_cluster$pFDR<-p.adjust(df_cluster$p.value, method = "BH")
+
+df_cluster[df_cluster$p.value <= 0.05, ] 
+
+violin(cluster,cluster$group,cluster$IC_16)
+violin(cluster,cluster$group,cluster$IC_23)
+```
+
+## centrality
+```{r}
+centrality<-subset(data, data$measure == "centrality")
+
+cen_vals<-apply(centrality[2:101], FUN=fit_function, MARGIN = 2 ,data=centrality)
+indx<-names(cen_vals)
+
+l <- list()
+for (i in seq(1, length(cen_vals), by= 1)){
+  print(paste("start", i))
+  df <- dfer(indx[i],cen_vals[i])
+  colnames(df) <- c("IC", "contrast", "estimate","SE","df", "lower.CL", "upper.CL", "t.ratio", "p.value")
+  l[[i]] <-df
+}
+
+df_centrality<-bind_rows(l)
+df_centrality$pFDR<-p.adjust(df_centrality$p.value, method = "BH")
+
+df_centrality[df_centrality$p.value <= 0.05, ] 
+
+violin(centrality,centrality$group,centrality$IC_16)
+violin(centrality,centrality$group,centrality$IC_11)
+```
+
+
+
+## participation coeffiecent 
+```{r}
+PC<-subset(data, data$measure == "PC")
+
+PC_vals<-apply(PC[2:101], FUN=fit_function, MARGIN = 2 ,data=PC)
+indx<-names(PC_vals)
+
+l <- list()
+for (i in seq(1, length(PC_vals), by= 1)){
+  print(paste("start", i))
+  df <- dfer(indx[i],PC_vals[i])
+  colnames(df) <- c("IC", "contrast", "estimate","SE","df", "lower.CL", "upper.CL", "t.ratio", "p.value")
+  l[[i]] <-df
+}
+
+df_PC<-bind_rows(l)
+df_PC$pFDR<-p.adjust(df_PC$p.value, method = "BH")
+
+df_PC[df_PC$p.value <= 0.05, ] 
+```
+
+```{r}
+head(graph_df)
+```
+
+```{r}
+chisq.test(table(graph_df$group, graph_df$node_type))
+tapply(graph_df$group, graph_df$node_type, summary)
+
+balloonplot(table(graph_df$group, graph_df$node_type), main ="Node Frequencies", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
+
+```
+```{r}
+chisq.test(table(graph_df$group, graph_df$sub_module))
+balloonplot(table(graph_df$group, graph_df$sub_module), main ="Sub_module Frequencies", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
+
+```
+
+```{r}
+chisq.test(table(graph_df$modules, graph_df$sub_module))
+balloonplot(table(graph_df$modules, graph_df$sub_module), main ="Sub_module Frequencies in modules", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
+
+```
+
+```{r}
+graph_df$modules<-as.factor(graph_df$modules)
+```
+
+```{r}
+head(graph_df)
+
+mod_function<-function(y,data){
+  fit<-lm(y~group, data=data)
+  test.emm <- emmeans(fit, "group")
+  contest<-emmeans(test.emm, pairwise ~ group)
+  test.emm.s <- update(contest$contrasts, infer = c(TRUE, TRUE))
+  return(summary(test.emm.s))
+}
+
+mod_function(graph_df$centrality,graph_df)
+mod_function(graph_df$clustering,graph_df)
+mod_function(graph_df$PC,graph_df)
+mod_function(abs(graph_df$zDegree),graph_df)
+
+violin(graph_df, graph_df$group, abs(graph_df$zDegree))
+violin(graph_df, graph_df$group, graph_df$centrality)
+violin(graph_df, graph_df$group, graph_df$clustering)
+violin(graph_df, graph_df$group, graph_df$PC)
+
+```
+
+
+```{r}
+head(graph_df)
+graph_df$sub_modules<-as.factor(graph_df$sub_modules)
+levels(graph_df$sub_modules)
+warp <- transform(graph_df, mods = interaction(modules, sub_modules))
+library(nlme)
+warp.gls <- gls(zDegree ~ mods, data = warp)
+warp.emm <- emmeans(warp.gls, "mods")
+warp.emm
+warp.fac <- update(warp.emm, levels = list(
+                mdoules = c("0", "1", "2", "3", "4", "5", "6", "7", "8"), 
+                sub_modules = c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")))
+
+contrast(warp.fac, "pairwise", by = "sub_modules", adjust = "fdr")
+```
+
+
+
+```{r}
+head(graph_df)
+warp <- transform(graph_df, mods = interaction(group, sub_modules))
+library(nlme)
+warp.gls <- gls(zDegree ~ mods, data = warp)
+warp.emm <- emmeans(warp.gls, "mods")
+warp.fac <- update(warp.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                sub_modules = c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")))
+
+contrast(warp.fac, "pairwise", by = "sub_modules", adjust = "fdr")
+```
+
