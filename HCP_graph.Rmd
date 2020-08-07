@@ -21,6 +21,7 @@ library(psych)
 library(multcomp)
 library(gridExtra)
 library(grid)
+library(nlme)
 ```
 
 
@@ -127,6 +128,13 @@ data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
 dat<-data[!duplicated(data[,c('sub')]),]
 levels(dat$group)    
 levels(dat$race_eth)
+
+#          no  ov  ob
+cons<- list(
+  noVov = c(1, -1,  0),
+  noVob = c(1,  0, -1),
+  ovVob = c(0,  1, -1)
+) 
 ```
 # Covariates
 ## Age
@@ -258,7 +266,7 @@ indx<-names(PC_vals)
 
 l <- list()
 for (i in seq(1, length(PC_vals), by= 1)){
-  print(paste("start", i))
+  # print(paste("start", i))
   df <- dfer(indx[i],PC_vals[i])
   colnames(df) <- c("IC", "contrast", "estimate","SE","df", "lower.CL", "upper.CL", "t.ratio", "p.value")
   l[[i]] <-df
@@ -268,10 +276,6 @@ df_PC<-bind_rows(l)
 df_PC$pFDR<-p.adjust(df_PC$p.value, method = "BH")
 
 df_PC[df_PC$p.value <= 0.05, ] 
-```
-
-```{r}
-head(graph_df)
 ```
 
 ```{r}
@@ -343,15 +347,115 @@ contrast(warp.fac, "pairwise", by = "sub_modules", adjust = "fdr")
 
 
 ```{r}
-head(graph_df)
-warp <- transform(graph_df, mods = interaction(group, sub_modules))
-library(nlme)
-warp.gls <- gls(zDegree ~ mods, data = warp)
-warp.emm <- emmeans(warp.gls, "mods")
-warp.fac <- update(warp.emm, levels = list(
-                group = c("normal", "overweight", "obese"), 
-                sub_modules = c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")))
+levels(graph_df$area)
+graph_df$modules<-as.factor(graph_df$modules)
+warp <- transform(graph_df, mods = interaction(group, area))
 
-contrast(warp.fac, "pairwise", by = "sub_modules", adjust = "fdr")
+warp$mods
+head(warp)
 ```
 
+```{r}
+zD.gls <- gls(zDegree ~ mods, data = warp)
+zD.emm <- emmeans(zD.gls, "mods")
+zD.fac <- update(zD.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
+                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
+                            "VentralAttn","VentralDiencephalon", "Visual" )))
+
+contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
+```
+
+```{r}
+PC.gls <- gls(PC ~ mods, data = warp)
+PC.emm <- emmeans(PC.gls, "mods")
+PC.fac <- update(PC.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
+                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
+                            "VentralAttn","VentralDiencephalon", "Visual" )))
+
+contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+```
+```{r}
+# head(warp)
+clus.gls <- gls(clustering ~ mods, data = warp)
+clus.emm <- emmeans(clus.gls, "mods")
+clus.fac <- update(clus.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
+                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
+                            "VentralAttn","VentralDiencephalon", "Visual" )))
+
+contrast(clus.fac, "pairwise", by = "area", adjust = "fdr")
+```
+
+```{r}
+cent.gls <- gls(centrality ~ mods, data = warp)
+cent.emm <- emmeans(cent.gls, "mods")
+cent.fac <- update(cent.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
+                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
+                            "VentralAttn","VentralDiencephalon", "Visual" )))
+
+contrast(cent.fac, "pairwise", by = "area", adjust = "fdr")
+```
+
+```{r}
+table(graph_df$modules, graph_df$area)
+```
+
+
+Nice function to make a pretty table
+```{r}
+tablr<-function(Y,x,D){
+  Q<-favstats(Y ~ x, data = D)
+  Q.stat <- Q[, c("x", "n", "mean", "sd")]
+  colnames(Q.stat)<-c("test","n", "mean", "sd")
+  a<-match.call()[2]
+  return(Q.stat)
+}
+```
+
+
+# Making a nice table
+```{r, warning=FALSE, message=FALSE}
+demo_vars<-c("Race","BMI","HbA1C","Menstrual_AgeBegan","Age_in_Yrs","group")
+dems<-d4[demo_vars]
+#dems<-na.omit(dems)
+byRace<-apply(dems, MARGIN = 2, FUN = tablr, x=dems$Race, D=dems)
+byGroup<-apply(dems, MARGIN = 2, FUN = tablr, x=dems$group, D=dems)
+t1<-merge(byRace$BMI,byRace$HbA1C,by="test")
+t2<-merge(t1,byRace$Menstrual_AgeBegan,by="test")
+t3<-merge(t2, byRace$Age_in_Yrs, by="test")
+
+
+s1<-merge(byGroup$BMI,byGroup$HbA1C,by="test")
+s2<-merge(s1,byGroup$Menstrual_AgeBegan,by="test")
+s3<-merge(s2, byGroup$Age_in_Yrs, by="test")
+
+
+all<-rbind(t3,s3)
+row.names(all)<-all$test
+row.names(all)<-c("Native American", "Asian, Native Hawaiian, or Pacific Islander","Black or African American","More than one race","Unknown or chose not to report","White","Total")
+
+drops <- c("test")
+all<-all[ , !(names(all) %in% drops)]
+```
+
+
+
+# Make the nice table
+```{r nice table}
+kable(all, format = "html",  col.names = c("n","mean","SD",
+                                           "n","mean","SD",
+                                           "n","mean","SD",
+                                           "n","mean","SD"),
+      caption = "Table 1: Descriptive statistics by reported race",
+      digits = c(0, 2, 2, 0, 2, 2,0, 2, 2,0, 2, 2), align = "ccrr") %>%
+  kable_styling(full_width = FALSE, position = "left") %>%
+  add_header_above(c(" " = 1,"BMI"= 3,"HbA1C"= 3,"Age of menses onset"=3,"Age at scan"=3))
+
+```

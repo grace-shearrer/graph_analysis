@@ -13,31 +13,56 @@ import matplotlib.pyplot as plt
 import community
 import analysis as an
 import glob
+import networkx as nx
 
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
-p = os.path.join(basepath,'tmp','5_summary_dict*')
-list_of_files = glob.glob(p) # * means all if need specific format then *.csv
-latest_file = max(list_of_files, key=os.path.getctime)
-print(latest_file)
+latest_file2=an.find_latest(os.path.join(basepath,'tmp'),'5_*')
+summary_dict=an.onetoughjar(latest_file2)
+summary_dict=summary_dict['NR']
+
+latest_file=an.find_latest(os.path.join(basepath,'tmp'),'6_*')
+submod_dict=an.onetoughjar(latest_file)
 
 
-summary_dict=an.onetoughjar(latest_file)
-# dict_keys(['mean_FC', 'graphs', 'clustering_coeff', 'btn_centrality', 'PC', 'modules'])
-# summary_dict['NR']['no']['modules']['partition']
-summary_dict['NR']['no']['graphs'].nodes(data=True)
 
-# x=an.grace_graph(summary_dict['NR']['no']['graphs'], 'centrality', 'Normal weight', 1)
-# y=an.grace_graph(summary_dict['NR']['ov']['graphs'], 'centrality', 'Overweight', 1)
-# z=an.grace_graph(summary_dict['NR']['ob']['graphs'], 'centrality', 'Obese', 1)
+# Make community graph
+for k,v in summary_dict.items():
+    # community.induced_graph(partition dictionary, graph)
+     comm_graph = community.induced_graph(v['modules']['partition'], v['graphs'])
+     v.update(comm_graph = comm_graph)
 
-# basepath='/Users/gracer/Google Drive/HCP_graph/1200/datasets/'
-#Load data from pickle if needed
-# summary_dict=an.onetoughjar(os.path.join(basepath,'tmp','summary_dict_11-14-2019_04-33-33'))
-for key, value in summary_dict.items():
-    for k,v in value.items():
-        # community.induced_graph(partition dictionary, graph)
-         comm_graph = community.induced_graph(v['modules']['partition'], v['graphs'])
-         v.update(comm_graph = comm_graph)
-an.module_fig(summary_dict['NR']['no']['comm_graph'], 'Normal', basepath)
-an.module_fig(summary_dict['NR']['ov']['comm_graph'], 'Overweight', basepath)
-an.module_fig(summary_dict['NR']['ob']['comm_graph'], 'Obese', basepath)
+# Normalize the edges
+edges = {}
+
+for group, stuff in summary_dict.items():
+    print(group)
+    _df = nx.to_pandas_edgelist(stuff['comm_graph'])
+    _df.loc[(_df['source'] == _df['target']), 'weight'] = 0
+    _df['group']=group
+    edges[group]=_df
+edge_df=pd.concat(list(edges.values()))
+edge_df['z_weight']=an.zscore(edge_df['weight'])
+
+# Set normalized edge as an get_edge_attributes
+for k,v in summary_dict.items():
+    test=edge_df[edge_df['group']==k]
+    keyz = list(zip(test['source'],test['target']))
+    values=test['z_weight']
+    up_dict={}
+    for i in range(len(keyz)):
+        up_dict[keyz[i]]={'z_edge':values[i]}
+    nx.set_edge_attributes(v['comm_graph'], up_dict)
+
+# Set viz Parameters
+aes_dict={'no':{},
+          'ov':{},
+          'ob':{}}
+for group, stuff in summary_dict.items():
+    print(group)
+    G=stuff['comm_graph']
+    aes_dict[group]=an.aesthetics(G,15000,100, 'sans-serif', 'Bold', 'z_edge', (80,50), 1)
+
+
+an.module_fig(summary_dict['no']['comm_graph'], 'Average BMI z-scored', basepath, aes_dict['no'])
+an.module_fig(summary_dict['ov']['comm_graph'], 'High BMI z-scored', basepath, aes_dict['ov'])
+an.module_fig(summary_dict['ob']['comm_graph'], 'Very High BMI z-scored', basepath, aes_dict['ob'])
