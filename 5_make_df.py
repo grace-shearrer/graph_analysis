@@ -27,6 +27,8 @@ for i,j in labels.iterrows():
     print(j['area'])
     note_dict[i]=j['area']
 
+p='/Users/gracer/Google Drive/HCP/HCP_graph/1200/'
+atlas=pd.read_csv(os.path.join(p,'brains','atlas.csv'), sep=',')
 #### Open data from 3
 p = os.path.join(basepath,'tmp','5_summary_dict*')
 list_of_files = glob.glob(p) # * means all if need specific format then *.csv
@@ -65,4 +67,6 @@ if __name__ == '__main__':
     ov=pd.concat(list(z['ov'].values()))
     ob=pd.concat(list(z['ob'].values()))
     total=pd.concat([no,ov,ob])
-    total.to_csv(os.path.join(basepath,'tmp','submodule_data.csv'), sep=',')
+    total.rename(columns={'Unnamed: 2': 'ROI'}, inplace=True)
+    new_df = total.merge(atlas[['X','Y','Z','ROI']], left_on='ROI', right_on = 'ROI', how='left')
+    new_df.to_csv(os.path.join(basepath,'tmp','submodule_data.csv'), sep=',')

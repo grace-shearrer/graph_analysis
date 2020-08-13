@@ -81,7 +81,7 @@ head(unres)
 
 # Graph data
 ```{r}
-graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data.csv", sep=",", header=T)
+graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data_handedit.csv", sep=",", header=T)
 head(graph_df)
 graph_df$group <- factor(graph_df$group, levels = c("normal","overweight","obese"))
 ```
@@ -328,21 +328,7 @@ violin(graph_df, graph_df$group, graph_df$PC)
 ```
 
 
-```{r}
-head(graph_df)
-graph_df$sub_modules<-as.factor(graph_df$sub_modules)
-levels(graph_df$sub_modules)
-warp <- transform(graph_df, mods = interaction(modules, sub_modules))
-library(nlme)
-warp.gls <- gls(zDegree ~ mods, data = warp)
-warp.emm <- emmeans(warp.gls, "mods")
-warp.emm
-warp.fac <- update(warp.emm, levels = list(
-                mdoules = c("0", "1", "2", "3", "4", "5", "6", "7", "8"), 
-                sub_modules = c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")))
 
-contrast(warp.fac, "pairwise", by = "sub_modules", adjust = "fdr")
-```
 
 
 
@@ -365,7 +351,14 @@ zD.fac <- update(zD.emm, levels = list(
                             "VentralAttn","VentralDiencephalon", "Visual" )))
 
 contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
+cer_z<-subset(warp, warp$area == "Cerebellum")
+violin(cer_z,cer_z$group,cer_z$zDegree)
+
+VD_z<-subset(warp, warp$area == "VentralDiencephalon")
+describeBy(VD_z$zDegree, VD_z$group)
 ```
+Cerebellum
+Ventral Diencephalon
 
 ```{r}
 PC.gls <- gls(PC ~ mods, data = warp)
@@ -377,7 +370,17 @@ PC.fac <- update(PC.emm, levels = list(
                             "VentralAttn","VentralDiencephalon", "Visual" )))
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+
+DMN_PC<-subset(warp, warp$area == "Default")
+violin(DMN_PC, DMN_PC$group, DMN_PC$PC)
+
+FP_PPC<-subset(warp, warp$area == "FrontoParietal")
+violin(FP_PPC, FP_PPC$group, FP_PPC$PC)
+
+vis_PPC<-subset(warp, warp$area == "Visual")
+violin(vis_PPC, vis_PPC$group, vis_PPC$PC)
 ```
+
 ```{r}
 # head(warp)
 clus.gls <- gls(clustering ~ mods, data = warp)
@@ -403,13 +406,13 @@ cent.fac <- update(cent.emm, levels = list(
 contrast(cent.fac, "pairwise", by = "area", adjust = "fdr")
 ```
 
-```{r}
-table(graph_df$modules, graph_df$area)
-```
+
+
 
 
 Nice function to make a pretty table
 ```{r}
+library(mosaic)
 tablr<-function(Y,x,D){
   Q<-favstats(Y ~ x, data = D)
   Q.stat <- Q[, c("x", "n", "mean", "sd")]
@@ -417,45 +420,162 @@ tablr<-function(Y,x,D){
   a<-match.call()[2]
   return(Q.stat)
 }
-```
 
+quickr<-function(X, Y, Z, X2, Y2, Z2, X3){
+  a<-merge(X, Y, by="test")
+  b<-merge(a, Z, by="test")
+
+  c<-merge(X2, Y2,by="test")
+  d<-merge(c, Z2, by="test")
+  # e<-merge(d, X3, by="test")
+  d$test<-revalue(d$test, c( "no" = "Total",
+                             "ov" = "Total",
+                             "ob" = "Total"))
+
+
+  e<-rbind(b,d)
+  f<-merge(e,X3, by="test")
+  drops <- c("Y")
+  f<-f[ , !(names(f) %in% drops)]
+  # f<-rbind(e,X3)
+  
+  library("plyr")
+  f$test<-revalue(f$test, c("Am. Indian/Alaskan Nat."=  "Native American",            
+                                  "Asian/Nat. Hawaiian/Othr Pacific Is."=  "Asian, Native Hawaiian, or Pacific Islander",
+                                  "Black or African Am."= "Black or African American",
+                                  "More than one"= "More than one race",                      
+                                  "Unknown or Not Reported"= "Unknown or chose not to report",
+                                  "White"= "White",
+                                  "Total"="Total"))
+    f$test <- factor(f$test, levels = c( "Native American",            
+                                  "Asian, Native Hawaiian, or Pacific Islander",
+                                  "Black or African American",
+                                  "More than one race",                      
+                                  "Unknown or chose not to report",
+                                  "White",
+                                  "Total"))
+
+  return(f)
+}
+
+sexr<-function(X,Y){
+  a <- table(X,Y)
+  b <- prop.table(a,margin=2)
+  c<-round(b*100, 1)
+  d<-data.frame(c)
+  e<-subset(d, d$Y == "F")
+  e<-rename(e, c("X"="test"))
+  A<-table(Y)
+  B <- prop.table(A)
+  C<-round(B*100, 1)
+  D<-data.frame(C)
+  E<-subset(D, D$Y == "F")
+  test <- rep("Total",length(1))
+  G <- cbind(test, E)
+  f<-rbind(e,G)
+  # return(rename(f, c("X"="test")))
+  return(f)
+
+}
+sexr(dem_no$Race, dem_no$Gender)
+```
+"Native American", "Asian, Native Hawaiian, or Pacific Islander","Black or African American","More than one race","Unknown or chose not to report","White","Total"
+X Y Freq
+```{r}
+demo_vars<-c("Race","BMI","HbA1C","Age_in_Yrs","group", "Gender")
+dems<-dat[demo_vars]
+
+groupSex<-table(dems$group, dems$Gender)
+groupSex <- prop.table(groupSex,margin=2)
+round(groupSex*100, 1)
+
+#dems<-na.omit(dems)
+dem_no<-subset(dems, dems$group == "no")
+dem_no$group<-factor(dem_no$group)
+
+dem_ov<-subset(dems, dems$group == "ov")
+dem_ov$group<-factor(dem_ov$group)
+
+
+dem_ob<-subset(dems, dems$group == "ob")
+dem_ob$group<-factor(dem_ob$group)
+```
 
 # Making a nice table
 ```{r, warning=FALSE, message=FALSE}
-demo_vars<-c("Race","BMI","HbA1C","Menstrual_AgeBegan","Age_in_Yrs","group")
-dems<-d4[demo_vars]
-#dems<-na.omit(dems)
-byRace<-apply(dems, MARGIN = 2, FUN = tablr, x=dems$Race, D=dems)
-byGroup<-apply(dems, MARGIN = 2, FUN = tablr, x=dems$group, D=dems)
-t1<-merge(byRace$BMI,byRace$HbA1C,by="test")
-t2<-merge(t1,byRace$Menstrual_AgeBegan,by="test")
-t3<-merge(t2, byRace$Age_in_Yrs, by="test")
 
 
-s1<-merge(byGroup$BMI,byGroup$HbA1C,by="test")
-s2<-merge(s1,byGroup$Menstrual_AgeBegan,by="test")
-s3<-merge(s2, byGroup$Age_in_Yrs, by="test")
+NObyRace<-apply(dem_no, MARGIN = 2, FUN = tablr, x=dem_no$Race, D=dem_no)
+NObyGroup<-apply(dem_no, MARGIN = 2, FUN = tablr, x=dem_no$group, D=dems)
+NObySEX<-sexr(dem_no$Race,dem_no$Gender)
+
+OVbyRace<-apply(dem_ov, MARGIN = 2, FUN = tablr, x=dem_ov$Race, D=dem_ov)
+OVbyGroup<-apply(dem_ov, MARGIN = 2, FUN = tablr, x=dem_ov$group, D=dem_ov)
+OVbySEX<-sexr(dem_ov$Race,dem_ov$Gender)
 
 
-all<-rbind(t3,s3)
-row.names(all)<-all$test
-row.names(all)<-c("Native American", "Asian, Native Hawaiian, or Pacific Islander","Black or African American","More than one race","Unknown or chose not to report","White","Total")
-
-drops <- c("test")
-all<-all[ , !(names(all) %in% drops)]
+OBbyRace<-apply(dem_ob, MARGIN = 2, FUN = tablr, x=dem_ob$Race, D=dem_ob)
+OBbyGroup<-apply(dem_ob, MARGIN = 2, FUN = tablr, x=dem_ob$group, D=dem_ob)
+OBbySEX<-sexr(dem_ob$Race,dem_ob$Gender)
 ```
 
+```{r}
+NO<-quickr(NObyRace$BMI, NObyRace$HbA1C, NObyRace$Age_in_Yrs, NObyGroup$BMI, NObyGroup$HbA1C, NObyGroup$Age_in_Yrs, NObySEX)
+NO<-NO[order(NO$test),]
+
+OV<-quickr(OVbyRace$BMI, OVbyRace$HbA1C, OVbyRace$Age_in_Yrs, OVbyGroup$BMI, OVbyGroup$HbA1C, OVbyGroup$Age_in_Yrs,OVbySEX)
+OV<-OV[order(OV$test),]
+
+OB<-quickr(OBbyRace$BMI, OBbyRace$HbA1C, OBbyRace$Age_in_Yrs, OBbyGroup$BMI, OBbyGroup$HbA1C, OBbyGroup$Age_in_Yrs, OBbySEX)
+OB<-OV[order(OB$test),]
+```
+
+```{r}
+
+all<-rbind(NO, OV, OB)
+all$test<-factor(all$test, levels = c( "Native American",            
+                                  "Asian, Native Hawaiian, or Pacific Islander",
+                                  "Black or African American",
+                                  "More than one race",                      
+                                  "Unknown or chose not to report",
+                                  "White",
+                                  "Total"))
+all <- tibble::rownames_to_column(all, "VALUE")
+
+all
+drops <- c("VALUE")
+all<-all[ , !(names(all) %in% drops)]
+
+all
+
+# all<-all[ , !(names(all) %in% drops)]
+# all
+```
+```{r}
+dim(all)
+colz<-c("Race/Ethncity",
+        "n","mean","SD",
+        "n","mean","SD",
+        "n","mean","SD",
+        "%")
+length(colz)
+digz<-c(0, 2, 2, 0, 2, 2,0, 2, 2)
+length(digz)
+```
 
 
 # Make the nice table
 ```{r nice table}
-kable(all, format = "html",  col.names = c("n","mean","SD",
-                                           "n","mean","SD",
-                                           "n","mean","SD",
-                                           "n","mean","SD"),
-      caption = "Table 1: Descriptive statistics by reported race",
-      digits = c(0, 2, 2, 0, 2, 2,0, 2, 2,0, 2, 2), align = "ccrr") %>%
+library(knitr)
+library(kableExtra)
+
+kable(all, format = "html",  col.names = colz,
+      caption = "Table 1: Descriptive statistics by reported race and BMI group",
+      digits = digz, align = "lccc") %>%
   kable_styling(full_width = FALSE, position = "left") %>%
-  add_header_above(c(" " = 1,"BMI"= 3,"HbA1C"= 3,"Age of menses onset"=3,"Age at scan"=3))
+  add_header_above(c(" " = 1,"BMI"= 3,"HbA1C"= 3,"Age at scan"=3, "Female"=1)) %>%
+  pack_rows("Average BMI", 1,7) %>%
+  pack_rows("High BMI", 8,14) %>%
+  pack_rows("Very high BMI", 15,21)
 
 ```
