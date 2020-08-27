@@ -619,7 +619,7 @@ def inner_mod(graph, metric, group, tile, style):
     e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
     purr=np.percentile(w, tile)
     print(purr)
-    g=an.threshold2(graph,purr)
+    g=threshold2(graph,purr)
 
     edges,weights = zip(*nx.get_edge_attributes(g, 'weight').items())
     weights=np.array(weights)
@@ -640,7 +640,7 @@ def inner_mod(graph, metric, group, tile, style):
 
     #draws nodes
     color = np.array(color)
-    colz=scipy.stats.zscore(color)
+    colz=stats.zscore(color)
     nColormap=plt.cm.cool #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
     cM=colz.max()
     cm=colz.min()
@@ -656,9 +656,8 @@ def inner_mod(graph, metric, group, tile, style):
 
     #Styling for labels
     keeps=g.nodes()
-    dict_you_want = { your_key: note_dict[your_key] for your_key in keeps }
+    # dict_you_want = { your_key: note_dict[your_key] for your_key in keeps }
     nx.draw_networkx_labels(g, positions, font_size=50,
-                            labels=dict_you_want,
                             font_family='sans-serif',
                             fontweight = 'bold')
 
@@ -707,7 +706,7 @@ def inner_mod(graph, metric, group, tile, style):
     plt.title("%s and edge weights of \n average %s graph"%(metric, group), fontsize = 100)
     basepath='/Users/gracer/Google Drive/HCP_graph/1200/images'
 
-    plt.savefig(os.path.join(basepath,"%s_%s_%s.png"%(metric,style,group)), format="PNG")
+    # plt.savefig(os.path.join(basepath,"%s_%s_%s.png"%(metric,style,group)), format="PNG")
     plt.show()
 
 def participation_coef(W, ci, degree='undirected'):
@@ -850,6 +849,15 @@ def permuatator4(liist):
         hubby(modstat_dict[i])
         node_type(modstat_dict[i])
     return(modstat_dict)
+
+
+def permuatator5(liist):
+    dicti=liist[0]
+    group=liist[1]
+    [dicti,mod_dicti]=mod_world(dicti)
+    subgraph_dict=sub_G(dicti, mod_dicti)
+    return(subgraph_dict)
+
 
 
 def find_latest(basepath, fi):
