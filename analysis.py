@@ -313,131 +313,131 @@ def threshold2(G, min_correlation):
             H.remove_edge(stock1, stock2)
     return(H)
 
-def grace_graph(graph, group, basepath ,**kwargs):
-    fs=50
-    e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
-    if bool(kwargs) == False:
-        positions = nx.circular_layout(graph)
-        size = 100
-        title= "Modularity and edge weights \n of average %s graph"%(group)
-        save="%s_graph.png"%(group)
-    else:
-        if 'position' in kwargs and kwargs['position']=='spectral':
-            positions = nx.spectral_layout(graph)
-            title= "Spectral modularity and edge weights \n of average %s graph"%(group)
-            save="Spectral_%s_graph.png"%(group)
-        elif 'position' in kwargs and kwargs['position']=='spring':
-            positions = nx.sping_layout(graph)
-            title= "Spring modularity and edge weights \n of average %s graph"%(group)
-            save="Sping_%s_graph.png"%(group)
-        else:
-            positions = nx.circular_layout(graph)
-            title= "Circle modularity and edge weights \n of average %s graph"%(group)
-            save="Circle_%s_graph.png"%(group)
-        if 'metric' in kwargs:
-            nodes, size = zip(*nx.get_node_attributes(graph, kwargs['metric']).items())
-        else:
-            size = 100
-            title = "basic"
-            save="%s_graph.png"%(group)
-        if 'thresh' in kwargs:
-            tile=kwargs['thresh']
-            purr=np.percentile(w, tile)
-            print(purr)
-            graph=threshold2(graph,purr)
-
-    edges,weights = zip(*nx.get_edge_attributes(graph, 'weight').items())
-    nodes, color = zip(*nx.get_node_attributes(graph, 'modules').items()) #if your modules are named different change here
-    # nodes, names = zip(*nx.get_node_attributes(graph, 'label').items()) #if your modules are named different change here
-    g=graph
-    #Figure size
-    plt.figure(figsize=(80,50))
-
-    #draws nodes
-    color = np.array(color)
-    n_color=len(list(set(color)))
-    # nColormap=plt.cm.Set3 #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
-    cM=color.max()
-    cm=color.min()
-    # get discrete colormap
-    nColormap = plt.get_cmap('Set3', n_color)
-
-    # scaling
-    sz=np.array(size)
-    scale=150/sz.max()
-    sza=sz*scale
-    # print(sz.shape)
-
-    y=nx.draw_networkx_nodes(g,positions,
-                           node_color=color,
-                           node_size=sza,
-                           alpha=0.8,
-                           cmap= nColormap,
-                           vmin=cm ,vmax=cM)
-
-    #Styling for labels
-    nx.draw_networkx_labels(g, positions,
-                            # labels = label_dict,
-                            font_size=fs,
-                            font_family='sans-serif',
-                            fontweight = 'bold')
-
-    #draw edges
-    weights=np.array(weights)
-    eColormap=plt.cm.gist_rainbow #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
-    # scaling
-    wt=list(set(weights))
-    wt=np.array(wt)
-    wt2=-np.sort(-wt)
-    wt0=wt2[1]
-
-    escale=1/wt0
-    esza=weights*escale
-    E=list(set(esza))
-    E2=-np.sort(-np.array(E))
-    M=E2[1]
-    m=esza.min()
-
-    x=nx.draw_networkx_edges(g, positions,
-                           edge_list=edges,
-                           style='solid',
-                           width = np.square(esza)*5,
-                           edge_color = esza,
-                           edge_cmap=eColormap,
-                           edge_vmin=m,
-                           edge_vmax=M)
-
-    #COLORBAR STUFF
-    node_bar=plt.colorbar(y, label='Module value')
-
-    tick_locs = (np.arange(n_color) + 0.5)*(n_color-1)/n_color
-    node_bar.set_ticks(tick_locs)
-
-    # set tick labels (as before)
-    node_bar.set_ticklabels(np.arange(n_color))
-
-
-    sm = plt.cm.ScalarMappable(cmap=eColormap, norm=plt.Normalize(vmin = m, vmax=M))
-    sm._A = []
-    edge_bar=plt.colorbar(sm)
-
-    for l in edge_bar.ax.yaxis.get_ticklabels():
-        l.set_size(fs)
-    for l in node_bar.ax.yaxis.get_ticklabels():
-        l.set_size(fs)
-        l.set_verticalalignment('center')
-
-    node_bar.set_label('Modularity',fontsize = fs)
-    edge_bar.set_label('Strength of edge weight',fontsize = fs)
-    # Final plot stuff
-    plt.axis('off')
-
-    plt.title(title, fontsize = fs*2)
-    basepath=basepath
-
-    plt.savefig(os.path.join(basepath,save), format="PNG")
-    plt.show()
-    return()
+# def grace_graph(graph, group, basepath ,**kwargs):
+#     fs=50
+#     e,w = zip(*nx.get_edge_attributes(graph, 'weight').items())
+#     if bool(kwargs) == False:
+#         positions = nx.circular_layout(graph)
+#         size = 100
+#         title= "Modularity and edge weights \n of average %s graph"%(group)
+#         save="%s_graph.png"%(group)
+#     else:
+#         if 'position' in kwargs and kwargs['position']=='spectral':
+#             positions = nx.spectral_layout(graph)
+#             title= "Spectral modularity and edge weights \n of average %s graph"%(group)
+#             save="Spectral_%s_graph.png"%(group)
+#         elif 'position' in kwargs and kwargs['position']=='spring':
+#             positions = nx.sping_layout(graph)
+#             title= "Spring modularity and edge weights \n of average %s graph"%(group)
+#             save="Sping_%s_graph.png"%(group)
+#         else:
+#             positions = nx.circular_layout(graph)
+#             title= "Circle modularity and edge weights \n of average %s graph"%(group)
+#             save="Circle_%s_graph.png"%(group)
+#         if 'metric' in kwargs:
+#             nodes, size = zip(*nx.get_node_attributes(graph, kwargs['metric']).items())
+#         else:
+#             size = 100
+#             title = "basic"
+#             save="%s_graph.png"%(group)
+#         if 'thresh' in kwargs:
+#             tile=kwargs['thresh']
+#             purr=np.percentile(w, tile)
+#             print(purr)
+#             graph=threshold2(graph,purr)
+#
+#     edges,weights = zip(*nx.get_edge_attributes(graph, 'weight').items())
+#     nodes, color = zip(*nx.get_node_attributes(graph, 'modules').items()) #if your modules are named different change here
+#     # nodes, names = zip(*nx.get_node_attributes(graph, 'label').items()) #if your modules are named different change here
+#     g=graph
+#     #Figure size
+#     plt.figure(figsize=(80,50))
+#
+#     #draws nodes
+#     color = np.array(color)
+#     n_color=len(list(set(color)))
+#     # nColormap=plt.cm.Set3 #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+#     cM=color.max()
+#     cm=color.min()
+#     # get discrete colormap
+#     nColormap = plt.get_cmap('Set3', n_color)
+#
+#     # scaling
+#     sz=np.array(size)
+#     scale=150/sz.max()
+#     sza=sz*scale
+#     # print(sz.shape)
+#
+#     y=nx.draw_networkx_nodes(g,positions,
+#                            node_color=color,
+#                            node_size=sza,
+#                            alpha=0.8,
+#                            cmap= nColormap,
+#                            vmin=cm ,vmax=cM)
+#
+#     #Styling for labels
+#     nx.draw_networkx_labels(g, positions,
+#                             # labels = label_dict,
+#                             font_size=fs,
+#                             font_family='sans-serif',
+#                             fontweight = 'bold')
+#
+#     #draw edges
+#     weights=np.array(weights)
+#     eColormap=plt.cm.gist_rainbow #check here if you want different colors https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html
+#     # scaling
+#     wt=list(set(weights))
+#     wt=np.array(wt)
+#     wt2=-np.sort(-wt)
+#     wt0=wt2[1]
+#
+#     escale=1/wt0
+#     esza=weights*escale
+#     E=list(set(esza))
+#     E2=-np.sort(-np.array(E))
+#     M=E2[1]
+#     m=esza.min()
+#
+#     x=nx.draw_networkx_edges(g, positions,
+#                            edge_list=edges,
+#                            style='solid',
+#                            width = np.square(esza)*5,
+#                            edge_color = esza,
+#                            edge_cmap=eColormap,
+#                            edge_vmin=m,
+#                            edge_vmax=M)
+#
+#     #COLORBAR STUFF
+#     node_bar=plt.colorbar(y, label='Module value')
+#
+#     tick_locs = (np.arange(n_color) + 0.5)*(n_color-1)/n_color
+#     node_bar.set_ticks(tick_locs)
+#
+#     # set tick labels (as before)
+#     node_bar.set_ticklabels(np.arange(n_color))
+#
+#
+#     sm = plt.cm.ScalarMappable(cmap=eColormap, norm=plt.Normalize(vmin = m, vmax=M))
+#     sm._A = []
+#     edge_bar=plt.colorbar(sm)
+#
+#     for l in edge_bar.ax.yaxis.get_ticklabels():
+#         l.set_size(fs)
+#     for l in node_bar.ax.yaxis.get_ticklabels():
+#         l.set_size(fs)
+#         l.set_verticalalignment('center')
+#
+#     node_bar.set_label('Modularity',fontsize = fs)
+#     edge_bar.set_label('Strength of edge weight',fontsize = fs)
+#     # Final plot stuff
+#     plt.axis('off')
+#
+#     plt.title(title, fontsize = fs*2)
+#     basepath=basepath
+#
+#     plt.savefig(os.path.join(basepath,save), format="PNG")
+#     plt.show()
+#     return()
 
 # def module_fig(G, Type, basepath):
 #     edges,weights = zip(*nx.get_edge_attributes(G,'weight').items())
