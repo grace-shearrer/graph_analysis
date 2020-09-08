@@ -1,10 +1,12 @@
 ---
 title: "HCP BMI"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Libraries
-```{r}
+```{r, echo=FALSE}
 library(tidyverse)
 library(magrittr)
 library(purrr)
@@ -26,7 +28,7 @@ library(nlme)
 
 
 # Functions
-```{r}
+```{r, echo=FALSE}
 cbPalette <- c( "#E69F00", "#56B4E9",  "#CC79A7")
 violin <- function(d, x, y){
   plot1<-ggplot(d, aes(factor(x), y)) + 
@@ -35,8 +37,9 @@ violin <- function(d, x, y){
 }
 ```
 
-# Demographics
-```{r}
+#  Loading in the data
+## Demographics
+```{r, echo=FALSE}
 demos<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/demos.csv", header=T, sep=",")
 head(demos)
 demos$Age_c<-scale(demos$Age_in_Yrs, scale = FALSE)
@@ -70,8 +73,8 @@ demos$race_eth <- ordered(demos$race_eth, levels = c("White", "Black or African 
 
 
 ```
-# Unresitricted data
-```{r}
+## Unresitricted data
+```{r, echo=FALSE}
 unres<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/unrestricted_gshearrer_4_19_2018_11_31_37.csv", header=T, sep=",")
 myvars<-c("Subject","Gender")
 unres<-unres[myvars]
@@ -79,15 +82,15 @@ unres$sub<-unres$Subject
 head(unres)
 ```
 
-# Graph data
-```{r}
-graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data_handedit.csv", sep=",", header=T)
+## Graph data
+```{r, echo=FALSE}
+graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data.csv", sep=",", header=T)
 head(graph_df)
 graph_df$group <- factor(graph_df$group, levels = c("normal","overweight","obese"))
 ```
 
-# Individual data
-```{r}
+## Individual data
+```{r, echo=FALSE}
 setwd("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp")
 
 # Reading in all the data from python 
@@ -106,7 +109,7 @@ dim(fc_tbl)
 tbl<-join(tbl,fc_tbl)
 ```
 # joining individual sub data 
-```{r}
+```{r, echo=FALSE}
 data<-join(tbl,demos)
 dim(data)
 # names(data)
@@ -114,7 +117,7 @@ data<-join(data, unres)
 dim(data)
 ```
 # Cleanup, center, ect
-```{r}
+```{r, echo=FALSE}
 cols <- c("sub","Gender" ,"ZygosityGT", "Ethnicity", "Mother_ID","Father_ID","group","race_eth", "measure")
 
 data %<>% mutate_at(cols, funs(factor(.)))
@@ -123,8 +126,14 @@ str(data[100:114])
 data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
 
 ```
+```{r, echo=FALSE}
+levels(graph_df$area)
+graph_df$area<-revalue(graph_df$area, c("cerebellum"="Cerebellum"))
+
+```
+
 ## Contrasts for demographics
-```{r}
+```{r, echo=FALSE}
 dat<-data[!duplicated(data[,c('sub')]),]
 levels(dat$group)    
 levels(dat$race_eth)
@@ -138,7 +147,7 @@ cons<- list(
 ```
 # Covariates
 ## Age
-```{r}
+```{r, echo=FALSE}
 dm1<-lm(Age_c~group, data=dat)
 lsq_dm1 = lsmeans(dm1, "group")
 contrast(lsq_dm1, cons, adjust='sidak')
@@ -148,8 +157,8 @@ describeBy(dat$Age_in_Yrs, dat$group)
 ## No difference in age 
 ```
 
-#BMI
-```{r}
+# BMI
+```{r, echo=FALSE}
 dm2<-lm(BMI~group, data=dat)
 lsq_dm2 = lsmeans(dm2, "group")
 contrast(lsq_dm2, cons, adjust='sidak')
@@ -159,7 +168,7 @@ describeBy(dat$BMI, dat$group)
 ```
 
 #HBA1c
-```{r}
+```{r, echo=FALSE}
 dm3<-lm(HBA1c_c~group, data=dat)
 lsq_dm3 = lsmeans(dm3, "group")
 contrast(lsq_dm3, cons, adjust='sidak')
@@ -169,11 +178,8 @@ describeBy(dat$HbA1C, dat$group)
 ```
 
 
-
-
-
 ## sex
-```{r}
+```{r, echo=FALSE}
 chisq.test(table(dat$group, dat$Gender))
 tapply(dat$group, dat$Gender, summary)
 
@@ -182,7 +188,7 @@ balloonplot(table(dat$group, dat$Gender), main ="Gender Frequencies", xlab ="", 
 ```
 
 ## Race
-```{r}
+```{r, echo=FALSE}
 chisq.test(table(dat$group, dat$race_eth))
 tapply(dat$group, dat$race_eth, summary)
 
@@ -204,7 +210,6 @@ dfer<-function(X,Y){
   df<-data.frame(X,Y, stringsAsFactors=FALSE)
   return(df)
 }
-
 ```
 
 ## clustering
@@ -286,26 +291,67 @@ balloonplot(table(graph_df$group, graph_df$node_type), main ="Node Frequencies",
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
 
 ```
+
+
 ```{r}
-chisq.test(table(graph_df$group, graph_df$sub_module))
-balloonplot(table(graph_df$group, graph_df$sub_module), main ="Sub_module Frequencies", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
+no_<-subset(graph_df, graph_df$group == "normal")
+pNo<-balloonplot(table(no_$modules, no_$area), main ="Module Frequencies in areas normal", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+balloonplot(table(no_$module, no_$IC), main ="Module Frequencies by IC", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+
+ov_<-subset(graph_df, graph_df$group == "overweight")
+pOv<-balloonplot(table(ov_$modules, ov_$area), main ="Module Frequencies in areas overweight", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+balloonplot(table(ov_$module, ov_$IC), main ="Module Frequencies by IC", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
+ob_<-subset(graph_df, graph_df$group == "obese")
+pOb<-balloonplot(table(ob_$modules, ob_$area), main ="Module Frequencies in areas obese", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+balloonplot(table(ob_$module, ob_$IC), main ="Module Frequencies by IC", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
 ```
 
-```{r}
-chisq.test(table(graph_df$modules, graph_df$sub_module))
-balloonplot(table(graph_df$modules, graph_df$sub_module), main ="Sub_module Frequencies in modules", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
+Module summaries
+Average weight
+0 - Visual
+1 - Fronto-medial parietal and cerebellum and DMN
+2 - Amygdala, auditory, hand mouth, and visual
+3 - Cerebellum, CO, dorsal attention
+4 - Cerebellum
+5 - cerebellum, caudate, putamen, thalamus, VDia
+6 - brain stem
+7 - brain stem, thalamus
+8 - brain stem
 
-```
+High weight
+0 - Visual
+1 - Amygdala, cerebellum, DMN, fronto-parietal 
+2 - Visual, hand mouth, dorsal attn
+3 - Cerebellum, CO, Fronto-parietal
+4 - Cerebellum
+5 - caudate, putamen, thalamus, VDia
+6 - Brain stem
+7 - brain stem
 
+Very high weight
+0 - Visual
+1 - Cerebellum, DMN, fronto-parietal
+2 - Auditory, brainstem, CO, DAttn, Visual, hand mouth
+3 - Cerebelllum, CO
+4 - Amygdala, cerebellum, DMN
+5 - Fronto-parietal
+6 - Caudate, putamen, thalamus
+7 - brainstem
+8 - brain stem, VDia
 ```{r}
 graph_df$modules<-as.factor(graph_df$modules)
 ```
 
 ```{r}
-head(graph_df)
+# head(graph_df)
 
 mod_function<-function(y,data){
   fit<-lm(y~group, data=data)
@@ -328,17 +374,10 @@ violin(graph_df, graph_df$group, graph_df$PC)
 ```
 
 
-
-
-
-
 ```{r}
-levels(graph_df$area)
+# levels(graph_df$area)
 graph_df$modules<-as.factor(graph_df$modules)
 warp <- transform(graph_df, mods = interaction(group, area))
-
-warp$mods
-head(warp)
 ```
 
 ```{r}
@@ -346,9 +385,9 @@ zD.gls <- gls(zDegree ~ mods, data = warp)
 zD.emm <- emmeans(zD.gls, "mods")
 zD.fac <- update(zD.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
-                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
-                            "VentralAttn","VentralDiencephalon", "Visual" )))
+                area = c("", "Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
 cer_z<-subset(warp, warp$area == "Cerebellum")
@@ -365,9 +404,9 @@ PC.gls <- gls(PC ~ mods, data = warp)
 PC.emm <- emmeans(PC.gls, "mods")
 PC.fac <- update(PC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
-                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
-                            "VentralAttn","VentralDiencephalon", "Visual" )))
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
 
@@ -381,15 +420,16 @@ vis_PPC<-subset(warp, warp$area == "Visual")
 violin(vis_PPC, vis_PPC$group, vis_PPC$PC)
 ```
 
+
 ```{r}
 # head(warp)
 clus.gls <- gls(clustering ~ mods, data = warp)
 clus.emm <- emmeans(clus.gls, "mods")
 clus.fac <- update(clus.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
-                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
-                            "VentralAttn","VentralDiencephalon", "Visual" )))
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(clus.fac, "pairwise", by = "area", adjust = "fdr")
 ```
@@ -399,9 +439,9 @@ cent.gls <- gls(centrality ~ mods, data = warp)
 cent.emm <- emmeans(cent.gls, "mods")
 cent.fac <- update(cent.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala","Auditory","BrainStem", "Caudate", "Cerebellum", "CinguloOperc","Default",
-                            "DorsalAttn","FrontoParietal","MedialParietal","None","Putamen","Smhand","Smmouth","Thalamus",
-                            "VentralAttn","VentralDiencephalon", "Visual" )))
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(cent.fac, "pairwise", by = "area", adjust = "fdr")
 ```
@@ -477,7 +517,6 @@ sexr<-function(X,Y){
   return(f)
 
 }
-sexr(dem_no$Race, dem_no$Gender)
 ```
 "Native American", "Asian, Native Hawaiian, or Pacific Islander","Black or African American","More than one race","Unknown or chose not to report","White","Total"
 X Y Freq
@@ -499,10 +538,11 @@ dem_ov$group<-factor(dem_ov$group)
 
 dem_ob<-subset(dems, dems$group == "ob")
 dem_ob$group<-factor(dem_ob$group)
+
 ```
 
 # Making a nice table
-```{r, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
 
 NObyRace<-apply(dem_no, MARGIN = 2, FUN = tablr, x=dem_no$Race, D=dem_no)
@@ -519,7 +559,7 @@ OBbyGroup<-apply(dem_ob, MARGIN = 2, FUN = tablr, x=dem_ob$group, D=dem_ob)
 OBbySEX<-sexr(dem_ob$Race,dem_ob$Gender)
 ```
 
-```{r}
+```{r, echo=FALSE}
 NO<-quickr(NObyRace$BMI, NObyRace$HbA1C, NObyRace$Age_in_Yrs, NObyGroup$BMI, NObyGroup$HbA1C, NObyGroup$Age_in_Yrs, NObySEX)
 NO<-NO[order(NO$test),]
 
@@ -527,10 +567,10 @@ OV<-quickr(OVbyRace$BMI, OVbyRace$HbA1C, OVbyRace$Age_in_Yrs, OVbyGroup$BMI, OVb
 OV<-OV[order(OV$test),]
 
 OB<-quickr(OBbyRace$BMI, OBbyRace$HbA1C, OBbyRace$Age_in_Yrs, OBbyGroup$BMI, OBbyGroup$HbA1C, OBbyGroup$Age_in_Yrs, OBbySEX)
-OB<-OV[order(OB$test),]
+OB<-OB[order(OB$test),]
 ```
 
-```{r}
+```{r, echo=FALSE}
 
 all<-rbind(NO, OV, OB)
 all$test<-factor(all$test, levels = c( "Native American",            
@@ -545,27 +585,19 @@ all <- tibble::rownames_to_column(all, "VALUE")
 all
 drops <- c("VALUE")
 all<-all[ , !(names(all) %in% drops)]
-
-all
-
-# all<-all[ , !(names(all) %in% drops)]
-# all
 ```
 ```{r}
-dim(all)
 colz<-c("Race/Ethncity",
         "n","mean","SD",
         "n","mean","SD",
         "n","mean","SD",
         "%")
-length(colz)
 digz<-c(0, 2, 2, 0, 2, 2,0, 2, 2)
-length(digz)
 ```
 
 
 # Make the nice table
-```{r nice table}
+```{r nice table, echo=FALSE}
 library(knitr)
 library(kableExtra)
 
@@ -575,7 +607,7 @@ kable(all, format = "html",  col.names = colz,
   kable_styling(full_width = FALSE, position = "left") %>%
   add_header_above(c(" " = 1,"BMI"= 3,"HbA1C"= 3,"Age at scan"=3, "Female"=1)) %>%
   pack_rows("Average BMI", 1,7) %>%
-  pack_rows("High BMI", 8,14) %>%
-  pack_rows("Very high BMI", 15,21)
+  pack_rows("High BMI", 8, 14) %>%
+  pack_rows("Very high BMI",15, 21)
 
 ```
