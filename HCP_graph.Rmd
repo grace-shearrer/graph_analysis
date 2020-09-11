@@ -129,7 +129,6 @@ data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
 ```{r, echo=FALSE}
 levels(graph_df$area)
 graph_df$area<-revalue(graph_df$area, c("cerebellum"="Cerebellum"))
-
 ```
 
 ## Contrasts for demographics
@@ -149,8 +148,9 @@ cons<- list(
 ## Age
 ```{r, echo=FALSE}
 dm1<-lm(Age_c~group, data=dat)
+summary(dm1)
 lsq_dm1 = lsmeans(dm1, "group")
-contrast(lsq_dm1, cons, adjust='sidak')
+contrast(lsq_dm1, cons, adjust='fdr')
 
 violin(dat,dat$group,dat$Age_c)
 describeBy(dat$Age_in_Yrs, dat$group)
@@ -161,7 +161,7 @@ describeBy(dat$Age_in_Yrs, dat$group)
 ```{r, echo=FALSE}
 dm2<-lm(BMI~group, data=dat)
 lsq_dm2 = lsmeans(dm2, "group")
-contrast(lsq_dm2, cons, adjust='sidak')
+contrast(lsq_dm2, cons, adjust='fdr')
 ## Sanity check difference between the groups
 violin(dat,dat$group,dat$BMI)
 describeBy(dat$BMI, dat$group)
@@ -170,8 +170,9 @@ describeBy(dat$BMI, dat$group)
 #HBA1c
 ```{r, echo=FALSE}
 dm3<-lm(HBA1c_c~group, data=dat)
+summary(dm3)
 lsq_dm3 = lsmeans(dm3, "group")
-contrast(lsq_dm3, cons, adjust='sidak')
+contrast(lsq_dm3, cons, adjust='fdr')
 
 violin(dat,dat$group,dat$HbA1C)
 describeBy(dat$HbA1C, dat$group)
@@ -186,7 +187,6 @@ tapply(dat$group, dat$Gender, summary)
 balloonplot(table(dat$group, dat$Gender), main ="Gender Frequencies", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, colmar=5, dotcolor=cbPalette)
 ```
-
 ## Race
 ```{r, echo=FALSE}
 chisq.test(table(dat$group, dat$race_eth))
@@ -212,6 +212,8 @@ dfer<-function(X,Y){
 }
 ```
 
+
+
 ## clustering
 ```{r}
 cluster<-subset(data, data$measure == "cluster")
@@ -229,7 +231,6 @@ for (i in seq(1, length(clus_vals), by= 1)){
 
 df_cluster<-bind_rows(l)
 df_cluster$pFDR<-p.adjust(df_cluster$p.value, method = "BH")
-
 df_cluster[df_cluster$p.value <= 0.05, ] 
 
 violin(cluster,cluster$group,cluster$IC_16)
@@ -260,8 +261,6 @@ violin(centrality,centrality$group,centrality$IC_16)
 violin(centrality,centrality$group,centrality$IC_11)
 ```
 
-
-
 ## participation coeffiecent 
 ```{r}
 PC<-subset(data, data$measure == "PC")
@@ -282,36 +281,78 @@ df_PC$pFDR<-p.adjust(df_PC$p.value, method = "BH")
 
 df_PC[df_PC$p.value <= 0.05, ] 
 ```
-
+## Nodal roles
 ```{r}
 chisq.test(table(graph_df$group, graph_df$node_type))
 tapply(graph_df$group, graph_df$node_type, summary)
 
 balloonplot(table(graph_df$group, graph_df$node_type), main ="Node Frequencies", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
+```
 
+```{r}
+gmod_function<-function(group,num,data){
+  y<-subset(data, data$group == sprintf("%s", group))
+  x<-subset(y, y$modules == sprintf("%s", num))
+  pX<-balloonplot(table(x$node_type, x$area), main =  sprintf("Module Frequencies by %s", num), xlab ="", ylab="",
+              label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+  my_list <- list(pX, chisq.test(table(x$group, x$area)))
+  return(my_list)
+}
+```
+
+
+
+
+```{r}
+mod_function<-function(num,data){
+  x<-subset(data, data$modules == sprintf("%s", num))
+  pX<-balloonplot(table(x$group, x$area), main =  sprintf("Module Frequencies by %s", num), xlab ="", ylab="",
+              label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+  my_list <- list(pX, chisq.test(table(x$group, x$area)))
+  return(my_list)
+}
 ```
 
 
 ```{r}
+chisq.test(table(graph_df$group, graph_df$modules))
+pAll<-balloonplot(table(graph_df$group, graph_df$modules), main ="Module Frequencies by group", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor='grey')
+# By Mod
+mod_function(0,graph_df)
+```
+
+
+```{r}
+x = 1
 no_<-subset(graph_df, graph_df$group == "normal")
-pNo<-balloonplot(table(no_$modules, no_$area), main ="Module Frequencies in areas normal", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
-balloonplot(table(no_$module, no_$IC), main ="Module Frequencies by IC", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+balloonplot(table(no_$modules, no_$area), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+
+no_2<-subset(no_, no_$modules == 2)
+balloonplot(table(no_2$node_type, no_2$area), main ="Module Frequencies per functional network average BMI sensory", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+
+no_4<-subset(no_, no_$modules == 4)
+balloonplot(table(no_4$node_type, no_4$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
 ov_<-subset(graph_df, graph_df$group == "overweight")
-pOv<-balloonplot(table(ov_$modules, ov_$area), main ="Module Frequencies in areas overweight", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
-balloonplot(table(ov_$module, ov_$IC), main ="Module Frequencies by IC", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+balloonplot(table(ov_$modules, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
+ov_0<-subset(ov_, ov_$modules == 0)
+balloonplot(table(ov_0$node_type, ov_0$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
+ov_5<-subset(ov_, ov_$modules == 5)
+balloonplot(table(ov_5$node_type, ov_5$area), main ="Module Frequencies per functional network high BMI module 5", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
 
 ob_<-subset(graph_df, graph_df$group == "obese")
-pOb<-balloonplot(table(ob_$modules, ob_$area), main ="Module Frequencies in areas obese", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
-balloonplot(table(ob_$module, ob_$IC), main ="Module Frequencies by IC", xlab ="", ylab="",
-            label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+balloonplot(table(ob_$modules, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
+ob_2<-subset(ob_, ob_$modules == 2)
+balloonplot(table(ob_2$node_type, ob_2$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+
+ob_6<-subset(ob_, ob_$modules == 6)
+balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per functional network very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 ```
 
 Module summaries
@@ -351,8 +392,6 @@ graph_df$modules<-as.factor(graph_df$modules)
 ```
 
 ```{r}
-# head(graph_df)
-
 mod_function<-function(y,data){
   fit<-lm(y~group, data=data)
   test.emm <- emmeans(fit, "group")
@@ -385,16 +424,13 @@ zD.gls <- gls(zDegree ~ mods, data = warp)
 zD.emm <- emmeans(zD.gls, "mods")
 zD.fac <- update(zD.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("", "Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
 cer_z<-subset(warp, warp$area == "Cerebellum")
 violin(cer_z,cer_z$group,cer_z$zDegree)
-
-VD_z<-subset(warp, warp$area == "VentralDiencephalon")
-describeBy(VD_z$zDegree, VD_z$group)
 ```
 Cerebellum
 Ventral Diencephalon
@@ -470,7 +506,8 @@ quickr<-function(X, Y, Z, X2, Y2, Z2, X3){
   # e<-merge(d, X3, by="test")
   d$test<-revalue(d$test, c( "no" = "Total",
                              "ov" = "Total",
-                             "ob" = "Total"))
+                             "ob" = "Total",
+                             "1" = "Total"))
 
 
   e<-rbind(b,d)
@@ -487,7 +524,7 @@ quickr<-function(X, Y, Z, X2, Y2, Z2, X3){
                                   "Unknown or Not Reported"= "Unknown or chose not to report",
                                   "White"= "White",
                                   "Total"="Total"))
-    f$test <- factor(f$test, levels = c( "Native American",            
+  f$test <- factor(f$test, levels = c( "Native American",            
                                   "Asian, Native Hawaiian, or Pacific Islander",
                                   "Black or African American",
                                   "More than one race",                      
@@ -543,10 +580,8 @@ dem_ob$group<-factor(dem_ob$group)
 
 # Making a nice table
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-
-
 NObyRace<-apply(dem_no, MARGIN = 2, FUN = tablr, x=dem_no$Race, D=dem_no)
-NObyGroup<-apply(dem_no, MARGIN = 2, FUN = tablr, x=dem_no$group, D=dems)
+NObyGroup<-apply(dem_no, MARGIN = 2, FUN = tablr, x=dem_no$group, D=dem_no)
 NObySEX<-sexr(dem_no$Race,dem_no$Gender)
 
 OVbyRace<-apply(dem_ov, MARGIN = 2, FUN = tablr, x=dem_ov$Race, D=dem_ov)
@@ -557,6 +592,15 @@ OVbySEX<-sexr(dem_ov$Race,dem_ov$Gender)
 OBbyRace<-apply(dem_ob, MARGIN = 2, FUN = tablr, x=dem_ob$Race, D=dem_ob)
 OBbyGroup<-apply(dem_ob, MARGIN = 2, FUN = tablr, x=dem_ob$group, D=dem_ob)
 OBbySEX<-sexr(dem_ob$Race,dem_ob$Gender)
+
+AllbyRace<-apply(dems, MARGIN = 2, FUN = tablr, x=dems$Race, D=dems)
+AllbyGroup<-apply(dems, MARGIN = 2, FUN = tablr, x=1, D=dems)
+AllbyGroup
+AllbySEX<-sexr(dems$Race,dems$Gender)
+
+AllbyGroup$BMI
+AllbyGroup$HbA1C
+AllbyGroup$Age_in_Yrs
 ```
 
 ```{r, echo=FALSE}
@@ -568,11 +612,16 @@ OV<-OV[order(OV$test),]
 
 OB<-quickr(OBbyRace$BMI, OBbyRace$HbA1C, OBbyRace$Age_in_Yrs, OBbyGroup$BMI, OBbyGroup$HbA1C, OBbyGroup$Age_in_Yrs, OBbySEX)
 OB<-OB[order(OB$test),]
+
+ALL<-quickr(AllbyRace$BMI, AllbyRace$HbA1C, AllbyRace$Age_in_Yrs, AllbyGroup$BMI, AllbyGroup$HbA1C, AllbyGroup$Age_in_Yrs, AllbySEX)
+ALL
+ALL<-ALL[order(ALL$test),]
+ALL
 ```
 
 ```{r, echo=FALSE}
 
-all<-rbind(NO, OV, OB)
+all<-rbind(NO, OV, OB, ALL)
 all$test<-factor(all$test, levels = c( "Native American",            
                                   "Asian, Native Hawaiian, or Pacific Islander",
                                   "Black or African American",
@@ -600,6 +649,9 @@ digz<-c(0, 2, 2, 0, 2, 2,0, 2, 2)
 ```{r nice table, echo=FALSE}
 library(knitr)
 library(kableExtra)
+# library(magick)
+# library(phantomjs)
+#webshot::install_phantomjs()
 
 kable(all, format = "html",  col.names = colz,
       caption = "Table 1: Descriptive statistics by reported race and BMI group",
@@ -608,6 +660,7 @@ kable(all, format = "html",  col.names = colz,
   add_header_above(c(" " = 1,"BMI"= 3,"HbA1C"= 3,"Age at scan"=3, "Female"=1)) %>%
   pack_rows("Average BMI", 1,7) %>%
   pack_rows("High BMI", 8, 14) %>%
-  pack_rows("Very high BMI",15, 21)
-
+  pack_rows("Very high BMI",15, 21)%>%
+  pack_rows("Total Sample",22, 28)%>%
+  save_kable("test2.pdf")
 ```
