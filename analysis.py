@@ -533,6 +533,18 @@ def permuatator2(liist):
         results_dict[k]=make_graphs(v,dir,thresh)
     return(results_dict)
 
+# def permuatator3(liist):
+#     # results_dict={'no':{},'ov':{},'ob':{}}
+#     cormat=liist[0]
+#     print(cormat)
+#     dir=liist[2]
+#     thresh=liist[3]
+#     key=liist[1]
+#     results=mu_make_graphs(key,cormat,dir,thresh)
+#     # for k,v in Dict.items():
+#     #     results_dict[k]=mu_make_graphs(k,v,dir,thresh)
+#     return(results)
+
 def permuatator3(liist):
     # results_dict={'no':{},'ov':{},'ob':{}}
     cormat=liist[0]
@@ -540,11 +552,10 @@ def permuatator3(liist):
     dir=liist[2]
     thresh=liist[3]
     key=liist[1]
-    results=mu_make_graphs(key,cormat,dir,thresh)
-    # for k,v in Dict.items():
-    #     results_dict[k]=mu_make_graphs(k,v,dir,thresh)
-    return(results)
-
+    results = mu_make_graphs(key,cormat,dir,thresh)
+    adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',results,'0_int_dict_%s'%key)
+    results2 = mu_make_graphs2(results)
+    return([results, results2])
 
 def mu_make_graphs(key, values, direction, min_cor):
     MyItem = namedtuple("MyItem", "shape colour")
@@ -557,26 +568,39 @@ def mu_make_graphs(key, values, direction, min_cor):
     tG = threshold(G, direction, min_cor)
     ########################################
     info = []
-    for n in range(0,10):
+    for n in range(0,5000):
         (partition,vals,graph)=ges(tG,'modules') ##### HERE
         info.append(MyItem(shape=str(vals), colour="%s"%key))
     frequency = Counter(info)
     while frequency.most_common()[0][-1] < 1:
         print('back in')
-        for n in range(0,10):
+        for n in range(0,5000):
             (partition,vals,graph)=ges(tG,'modules') ##### HERE
-            info.append( MyItem(shape=str(vals), colour="%s"%key))
+            info.append(MyItem(shape=str(vals), colour="%s"%key))
         frequency = Counter(info)
     res = frequency.most_common()[0][0][0][1:-1]
-    print(res)
+    print(set(res))
     X=list(map(int, res.split(',')))
+    print(set(X))
     P = dict(zip(partition.keys(), X))
-    print(P)
+    print(set(P.values()))
     # print(X.shape)
     nx.set_node_attributes(tG, P, 'modules')
     vals=np.array(X)
     ci=np.reshape(X, (100, 1))
     W=np.array(cor_matrix)
+    return({'mean_FC':mu, 'graphs':G,'modules':{'partition':P,
+    'values':vals,'graph':tG}, 'corrmat':cor_matrix})
+
+def mu_make_graphs2(dicti):
+    tG = dicti['modules']['graph']
+    G = dicti['graphs']
+    vals = dicti['modules']['values']
+    partition = dicti['modules']['partition']
+    nx.set_node_attributes(tG, partition, 'modules')
+    vals=np.array(vals)
+    ci=np.reshape(vals, (100, 1))
+    W=np.array(dicti['corrmat'])
     ########################################
     # PC=participation_coef(W=W, ci=ci, degree="undirected")
     PC=bct.participation_coef_sign(W,ci)
@@ -592,34 +616,101 @@ def mu_make_graphs(key, values, direction, min_cor):
     centrality = nx.betweenness_centrality(tG, weight=True)
     # centrality_dict[key]=centrality
     ########################################
-    nx.set_node_attributes(G, centrality, 'centrality')
-    nx.set_node_attributes(G, clustering, 'clustering')
-    nx.set_node_attributes(G, pc_dict, 'PC')
-    nx.set_node_attributes(G, partition, 'modules')
-
-    nx.set_node_attributes(tG, centrality, 'centrality')
-    nx.set_node_attributes(tG, clustering, 'clustering')
-    nx.set_node_attributes(tG, pc_dict, 'PC')
-    nx.set_node_attributes(tG, partition, 'modules')
-    ########################################
     print('start zdegree')
     zdegree=bct.module_degree_zscore(W, ci, flag=0)
     zzip=dict(zip(list(vals), zdegree))
-    print('this is the zzip')
-    print(zzip)
     ########################################
     zD = {}
     for node, mod in nx.get_node_attributes(G,'modules').items():
-        print('this is the mod %s'%mod)
-        print('this is the node %s'%node)
         zD[node]=zzip[mod]
     print(zD)
-    nx.set_node_attributes(G, zD, 'zDegree')
-    nx.set_node_attributes(tG, zD, 'zDegree')
     ########################################
 
-    return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition,
+    measures = {'clustering':clustering,'centrality':centrality, 'PC':pc_dict,'zDegree':zD}
+    for name, mes in measures.items():
+        nx.set_node_attributes(G, mes, '%s'%name)
+        nx.set_node_attributes(tG, mes, '%s'%name)
+     ########################################
+
+    return({'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition,
     'values':vals,'graph':tG,'zdegree':zdegree}})
+
+
+
+# def mu_make_graphs(key, values, direction, min_cor):
+#     MyItem = namedtuple("MyItem", "shape colour")
+#     ########################################
+#     cor_matrix = np.asmatrix(values)
+#     x=abs(cor_matrix)
+#     mu=x.mean()
+#     ########################################
+#     G = nx.from_numpy_matrix(cor_matrix)
+#     tG = threshold(G, direction, min_cor)
+#     ########################################
+#     info = []
+#     for n in range(0,10):
+#         (partition,vals,graph)=ges(tG,'modules') ##### HERE
+#         info.append(MyItem(shape=str(vals), colour="%s"%key))
+#     frequency = Counter(info)
+#     while frequency.most_common()[0][-1] < 1:
+#         print('back in')
+#         for n in range(0,10):
+#             (partition,vals,graph)=ges(tG,'modules') ##### HERE
+#             info.append( MyItem(shape=str(vals), colour="%s"%key))
+#         frequency = Counter(info)
+#     res = frequency.most_common()[0][0][0][1:-1]
+#     print(res)
+#     X=list(map(int, res.split(',')))
+#     P = dict(zip(partition.keys(), X))
+#     print(P)
+#     # print(X.shape)
+#     nx.set_node_attributes(tG, P, 'modules')
+#     vals=np.array(X)
+#     ci=np.reshape(X, (100, 1))
+#     W=np.array(cor_matrix)
+#     ########################################
+#     # PC=participation_coef(W=W, ci=ci, degree="undirected")
+#     PC=bct.participation_coef_sign(W,ci)
+#     PC=list(PC)
+#     PCpos=PC[0]
+#     pc_dict={}
+#     for i in range(len(PCpos)):
+#         pc_dict[i]=PCpos[i]
+#         # print(pc_dict)
+#     clustering = nx.clustering(tG, weight=True)
+#     # clustering_dict[key]=clustering
+#     ########################################
+#     centrality = nx.betweenness_centrality(tG, weight=True)
+#     # centrality_dict[key]=centrality
+#     ########################################
+#     nx.set_node_attributes(G, centrality, 'centrality')
+#     nx.set_node_attributes(G, clustering, 'clustering')
+#     nx.set_node_attributes(G, pc_dict, 'PC')
+#     nx.set_node_attributes(G, partition, 'modules')
+#
+#     nx.set_node_attributes(tG, centrality, 'centrality')
+#     nx.set_node_attributes(tG, clustering, 'clustering')
+#     nx.set_node_attributes(tG, pc_dict, 'PC')
+#     nx.set_node_attributes(tG, partition, 'modules')
+#     ########################################
+#     print('start zdegree')
+#     zdegree=bct.module_degree_zscore(W, ci, flag=0)
+#     zzip=dict(zip(list(vals), zdegree))
+#     print('this is the zzip')
+#     print(zzip)
+#     ########################################
+#     zD = {}
+#     for node, mod in nx.get_node_attributes(G,'modules').items():
+#         print('this is the mod %s'%mod)
+#         print('this is the node %s'%node)
+#         zD[node]=zzip[mod]
+#     print(zD)
+#     nx.set_node_attributes(G, zD, 'zDegree')
+#     nx.set_node_attributes(tG, zD, 'zDegree')
+#     ########################################
+#
+#     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition,
+#     'values':vals,'graph':tG,'zdegree':zdegree}})
 
 
 def corrector(x, alpha):
