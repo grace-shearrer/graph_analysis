@@ -317,6 +317,8 @@ mod_function<-function(num,data){
 
 ```{r}
 chisq.test(table(graph_df$group, graph_df$modules))
+
+table(graph_df$group, graph_df$modules)
 pAll<-balloonplot(table(graph_df$group, graph_df$modules), main ="Module Frequencies by group", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor='grey')
 # By Mod
@@ -332,13 +334,13 @@ balloonplot(table(no_$modules, no_$area), main ="Module Frequencies per function
 no_2<-subset(no_, no_$modules == 2)
 balloonplot(table(no_2$node_type, no_2$area), main ="Module Frequencies per functional network average BMI sensory", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
-no_4<-subset(no_, no_$modules == 4)
-balloonplot(table(no_4$node_type, no_4$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+no_5<-subset(no_, no_$modules == 5)
+balloonplot(table(no_5$node_type, no_5$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
 ov_<-subset(graph_df, graph_df$group == "overweight")
 balloonplot(table(ov_$modules, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
-ov_0<-subset(ov_, ov_$modules == 0)
+ov_0<-subset(ov_, ov_$modules == 2)
 balloonplot(table(ov_0$node_type, ov_0$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
 ov_5<-subset(ov_, ov_$modules == 5)

@@ -24,11 +24,15 @@ latest_file = max(list_of_files, key=os.path.getctime)
 print(latest_file)
 
 summary_dict=an.onetoughjar(latest_file)
+update_dict = {}
+for key, value in summary_dict.items():
+    print(key)
+    update_dict[key] = {**value[0], **value[1]}
 
 
-list1=[summary_dict['NR']['no'],'normal']
-list2=[summary_dict['NR']['ov'],'overweight']
-list3=[summary_dict['NR']['ob'],'obese']
+list1=[update_dict['no'],'normal']
+list2=[update_dict['ov'],'overweight']
+list3=[update_dict['ob'],'obese']
 
 if __name__ == '__main__':
 
