@@ -33,6 +33,8 @@ import pdb
 import multiprocessing
 from multiprocessing import Pool
 import bct as bct
+from collections import namedtuple
+from collections import Counter
 
 datefmt='%m-%d-%Y_%I-%M-%S'
 logging.basicConfig(format='%(asctime)s %(message)s ', datefmt=datefmt, level=logging.INFO)
@@ -532,18 +534,20 @@ def permuatator2(liist):
     return(results_dict)
 
 def permuatator3(liist):
-    results_dict={'no':{},'ov':{},'ob':{}}
-    Dict=liist[0]
+    # results_dict={'no':{},'ov':{},'ob':{}}
+    cormat=liist[0]
+    print(cormat)
     dir=liist[2]
     thresh=liist[3]
     key=liist[1]
-    print(key)
-    for k,v in Dict.items():
-        results_dict[k]=mu_make_graphs(k,v,dir,thresh)
-    return(results_dict)
+    results=mu_make_graphs(key,cormat,dir,thresh)
+    # for k,v in Dict.items():
+    #     results_dict[k]=mu_make_graphs(k,v,dir,thresh)
+    return(results)
 
 
 def mu_make_graphs(key, values, direction, min_cor):
+    MyItem = namedtuple("MyItem", "shape colour")
     ########################################
     cor_matrix = np.asmatrix(values)
     x=abs(cor_matrix)
@@ -552,11 +556,28 @@ def mu_make_graphs(key, values, direction, min_cor):
     G = nx.from_numpy_matrix(cor_matrix)
     tG = threshold(G, direction, min_cor)
     ########################################
-    (partition,vals,graph)=ges(tG,'modules')
-    # partition_dict[key]=(partition,vals)
-    vals=np.array(vals)
-    ci=np.reshape(vals, (100, 1))
+    info = []
+    for n in range(0,10):
+        (partition,vals,graph)=ges(tG,'modules') ##### HERE
+        info.append(MyItem(shape=str(vals), colour="%s"%key))
+    frequency = Counter(info)
+    while frequency.most_common()[0][-1] < 1:
+        print('back in')
+        for n in range(0,10):
+            (partition,vals,graph)=ges(tG,'modules') ##### HERE
+            info.append( MyItem(shape=str(vals), colour="%s"%key))
+        frequency = Counter(info)
+    res = frequency.most_common()[0][0][0][1:-1]
+    print(res)
+    X=list(map(int, res.split(',')))
+    P = dict(zip(partition.keys(), X))
+    print(P)
+    # print(X.shape)
+    nx.set_node_attributes(tG, P, 'modules')
+    vals=np.array(X)
+    ci=np.reshape(X, (100, 1))
     W=np.array(cor_matrix)
+    ########################################
     # PC=participation_coef(W=W, ci=ci, degree="undirected")
     PC=bct.participation_coef_sign(W,ci)
     PC=list(PC)
@@ -571,24 +592,34 @@ def mu_make_graphs(key, values, direction, min_cor):
     centrality = nx.betweenness_centrality(tG, weight=True)
     # centrality_dict[key]=centrality
     ########################################
-    print('start zdegree')
-    zdegree=bct.module_degree_zscore(W, ci, flag=0)
-    zzip=dict(zip(list(vals), zdegree))
-    ########################################
     nx.set_node_attributes(G, centrality, 'centrality')
     nx.set_node_attributes(G, clustering, 'clustering')
     nx.set_node_attributes(G, pc_dict, 'PC')
     nx.set_node_attributes(G, partition, 'modules')
+
+    nx.set_node_attributes(tG, centrality, 'centrality')
+    nx.set_node_attributes(tG, clustering, 'clustering')
+    nx.set_node_attributes(tG, pc_dict, 'PC')
+    nx.set_node_attributes(tG, partition, 'modules')
+    ########################################
+    print('start zdegree')
+    zdegree=bct.module_degree_zscore(W, ci, flag=0)
+    zzip=dict(zip(list(vals), zdegree))
+    print('this is the zzip')
+    print(zzip)
     ########################################
     zD = {}
     for node, mod in nx.get_node_attributes(G,'modules').items():
+        print('this is the mod %s'%mod)
+        print('this is the node %s'%node)
         zD[node]=zzip[mod]
     print(zD)
     nx.set_node_attributes(G, zD, 'zDegree')
+    nx.set_node_attributes(tG, zD, 'zDegree')
     ########################################
 
     return({'mean_FC':mu, 'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition,
-    'values':vals,'graph':graph,'zdegree':zdegree}})
+    'values':vals,'graph':tG,'zdegree':zdegree}})
 
 
 def corrector(x, alpha):

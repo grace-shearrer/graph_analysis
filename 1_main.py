@@ -79,3 +79,6 @@ if __name__ == '__main__':
     [MZ,DZ,NR] = pool.map(an.permuatator1, [list1, list2, list3])
     pool.close() # no more tasks
     pool.join()  # wrap up current tasks
+
+    save_dict={'MZ':MZ,'DZ':DZ,'NR':NR}
+    an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict,'2_file_dict')

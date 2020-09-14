@@ -22,9 +22,12 @@ for key, value in file_dict.items():
 
 an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',mean_dict,'4_mean_dict')
 
-list1=[mean_dict['MZ'],'MZ','positive',0]
-list2=[mean_dict['DZ'], 'DZ', 'positive',0]
-list3=[mean_dict['NR'], 'NR','positive',0]
+# list1=[mean_dict['MZ'],'MZ','positive',0]
+# list2=[mean_dict['DZ'], 'DZ', 'positive',0]
+# list3=[mean_dict['NR'], 'NR','positive',0]
+list1=[mean_dict['NR']['no'],'no','positive',0]
+list2=[mean_dict['NR']['ov'],'ov', 'positive',0]
+list3=[mean_dict['NR']['ob'],'ob','positive',0]
 
 
 # test_dict=an.permuatator2(list1)
@@ -36,10 +39,10 @@ if __name__ == '__main__':
                                 initializer=an.start_process,
                                 )
 
-    [MZ,DZ,NR] = pool.map(an.permuatator3, [list1, list2, list3])
+    [no,ov,ob] = pool.map(an.permuatator3, [list1, list2, list3])
     pool.close() # no more tasks
     pool.join()  # wrap up current tasks
 
 
-    summary_dict={'MZ':MZ,'DZ':DZ,'NR':NR}
+    summary_dict={'no':no,'ov':ov,'ob':ob}
     an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',summary_dict,'5_summary_dict')

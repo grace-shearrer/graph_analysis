@@ -38,9 +38,9 @@ print(latest_file)
 summary_dict=an.onetoughjar(latest_file)
 
 
-list1=[summary_dict['NR']['no'],'normal']
-list2=[summary_dict['NR']['ov'],'overweight']
-list3=[summary_dict['NR']['ob'],'obese']
+list1=[summary_dict['no'],'normal']
+list2=[summary_dict['ov'],'overweight']
+list3=[summary_dict['ob'],'obese']
 
 if __name__ == '__main__':
 
