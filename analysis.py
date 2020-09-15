@@ -586,6 +586,7 @@ def mu_make_graphs(key, values, direction, min_cor):
     print(set(P.values()))
     # print(X.shape)
     nx.set_node_attributes(tG, P, 'modules')
+    nx.set_node_attributes(G, P, 'modules')
     vals=np.array(X)
     ci=np.reshape(X, (100, 1))
     W=np.array(cor_matrix)

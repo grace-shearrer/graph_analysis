@@ -45,4 +45,4 @@ if __name__ == '__main__':
 
 
     summary_dict={'no':no,'ov':ov,'ob':ob}
-    an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',summary_dict,'5_summary_dict')
+    an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',summary_dict,'05_subsummary_dict')

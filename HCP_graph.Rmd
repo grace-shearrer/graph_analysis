@@ -316,10 +316,11 @@ mod_function<-function(num,data){
 
 
 ```{r}
-chisq.test(table(graph_df$group, graph_df$modules))
 
-table(graph_df$group, graph_df$modules)
-pAll<-balloonplot(table(graph_df$group, graph_df$modules), main ="Module Frequencies by group", xlab ="", ylab="",
+chisq.test(table(graph_df$group, graph_df$module))
+
+table(graph_df$group, graph_df$module)
+pAll<-balloonplot(table(graph_df$group, graph_df$module), main ="Module Frequencies by group", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor='grey')
 # By Mod
 mod_function(0,graph_df)
@@ -329,31 +330,31 @@ mod_function(0,graph_df)
 ```{r}
 x = 1
 no_<-subset(graph_df, graph_df$group == "normal")
-balloonplot(table(no_$modules, no_$area), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+balloonplot(table(no_$module, no_$area), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
-no_2<-subset(no_, no_$modules == 2)
+no_2<-subset(no_, no_$module == 2)
 balloonplot(table(no_2$node_type, no_2$area), main ="Module Frequencies per functional network average BMI sensory", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
-no_5<-subset(no_, no_$modules == 5)
+no_5<-subset(no_, no_$module == 5)
 balloonplot(table(no_5$node_type, no_5$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
 ov_<-subset(graph_df, graph_df$group == "overweight")
-balloonplot(table(ov_$modules, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+balloonplot(table(ov_$module, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
-ov_0<-subset(ov_, ov_$modules == 2)
+ov_0<-subset(ov_, ov_$module == 2)
 balloonplot(table(ov_0$node_type, ov_0$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
-ov_5<-subset(ov_, ov_$modules == 5)
+ov_5<-subset(ov_, ov_$module == 5)
 balloonplot(table(ov_5$node_type, ov_5$area), main ="Module Frequencies per functional network high BMI module 5", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
 
 ob_<-subset(graph_df, graph_df$group == "obese")
-balloonplot(table(ob_$modules, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+balloonplot(table(ob_$module, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
-ob_2<-subset(ob_, ob_$modules == 2)
+ob_2<-subset(ob_, ob_$module == 2)
 balloonplot(table(ob_2$node_type, ob_2$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
-ob_6<-subset(ob_, ob_$modules == 6)
+ob_6<-subset(ob_, ob_$module == 6)
 balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per functional network very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 ```
 
@@ -390,7 +391,7 @@ Very high weight
 7 - brainstem
 8 - brain stem, VDia
 ```{r}
-graph_df$modules<-as.factor(graph_df$modules)
+graph_df$module<-as.factor(graph_df$module)
 ```
 
 ```{r}
@@ -405,9 +406,7 @@ mod_function<-function(y,data){
 mod_function(graph_df$centrality,graph_df)
 mod_function(graph_df$clustering,graph_df)
 mod_function(graph_df$PC,graph_df)
-mod_function(abs(graph_df$zDegree),graph_df)
 
-violin(graph_df, graph_df$group, abs(graph_df$zDegree))
 violin(graph_df, graph_df$group, graph_df$centrality)
 violin(graph_df, graph_df$group, graph_df$clustering)
 violin(graph_df, graph_df$group, graph_df$PC)
@@ -417,22 +416,22 @@ violin(graph_df, graph_df$group, graph_df$PC)
 
 ```{r}
 # levels(graph_df$area)
-graph_df$modules<-as.factor(graph_df$modules)
+graph_df$module<-as.factor(graph_df$module)
 warp <- transform(graph_df, mods = interaction(group, area))
 ```
 
 ```{r}
-zD.gls <- gls(zDegree ~ mods, data = warp)
-zD.emm <- emmeans(zD.gls, "mods")
-zD.fac <- update(zD.emm, levels = list(
-                group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
-                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
-                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
-
-contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
-cer_z<-subset(warp, warp$area == "Cerebellum")
-violin(cer_z,cer_z$group,cer_z$zDegree)
+# zD.gls <- gls(zDegree ~ mods, data = warp)
+# zD.emm <- emmeans(zD.gls, "mods")
+# zD.fac <- update(zD.emm, levels = list(
+#                 group = c("normal", "overweight", "obese"), 
+#                 area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+#                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
+#                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
+# 
+# contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
+# cer_z<-subset(warp, warp$area == "Cerebellum")
+# violin(cer_z,cer_z$group,cer_z$zDegree)
 ```
 Cerebellum
 Ventral Diencephalon
