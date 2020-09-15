@@ -129,6 +129,8 @@ data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
 ```{r, echo=FALSE}
 levels(graph_df$area)
 graph_df$area<-revalue(graph_df$area, c("cerebellum"="Cerebellum"))
+graph_df$area<-revalue(graph_df$area, c("None"=""))
+
 ```
 
 ## Contrasts for demographics
@@ -299,13 +301,7 @@ gmod_function<-function(group,num,data){
   my_list <- list(pX, chisq.test(table(x$group, x$area)))
   return(my_list)
 }
-```
-
-
-
-
-```{r}
-mod_function<-function(num,data){
+pod_function<-function(num,data){
   x<-subset(data, data$modules == sprintf("%s", num))
   pX<-balloonplot(table(x$group, x$area), main =  sprintf("Module Frequencies by %s", num), xlab ="", ylab="",
               label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
@@ -313,6 +309,7 @@ mod_function<-function(num,data){
   return(my_list)
 }
 ```
+
 
 
 ```{r}
@@ -323,7 +320,6 @@ table(graph_df$group, graph_df$module)
 pAll<-balloonplot(table(graph_df$group, graph_df$module), main ="Module Frequencies by group", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90, text.size=1 ,dotsize = 5, colmar=5, dotcolor='grey')
 # By Mod
-mod_function(0,graph_df)
 ```
 
 
@@ -357,39 +353,6 @@ balloonplot(table(ob_2$node_type, ob_2$area), main ="Module Frequencies per func
 ob_6<-subset(ob_, ob_$module == 6)
 balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per functional network very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 ```
-
-Module summaries
-Average weight
-0 - Visual
-1 - Fronto-medial parietal and cerebellum and DMN
-2 - Amygdala, auditory, hand mouth, and visual
-3 - Cerebellum, CO, dorsal attention
-4 - Cerebellum
-5 - cerebellum, caudate, putamen, thalamus, VDia
-6 - brain stem
-7 - brain stem, thalamus
-8 - brain stem
-
-High weight
-0 - Visual
-1 - Amygdala, cerebellum, DMN, fronto-parietal 
-2 - Visual, hand mouth, dorsal attn
-3 - Cerebellum, CO, Fronto-parietal
-4 - Cerebellum
-5 - caudate, putamen, thalamus, VDia
-6 - Brain stem
-7 - brain stem
-
-Very high weight
-0 - Visual
-1 - Cerebellum, DMN, fronto-parietal
-2 - Auditory, brainstem, CO, DAttn, Visual, hand mouth
-3 - Cerebelllum, CO
-4 - Amygdala, cerebellum, DMN
-5 - Fronto-parietal
-6 - Caudate, putamen, thalamus
-7 - brainstem
-8 - brain stem, VDia
 ```{r}
 graph_df$module<-as.factor(graph_df$module)
 ```
@@ -410,39 +373,20 @@ mod_function(graph_df$PC,graph_df)
 violin(graph_df, graph_df$group, graph_df$centrality)
 violin(graph_df, graph_df$group, graph_df$clustering)
 violin(graph_df, graph_df$group, graph_df$PC)
-
 ```
 
 
+
+
 ```{r}
-# levels(graph_df$area)
-graph_df$module<-as.factor(graph_df$module)
 warp <- transform(graph_df, mods = interaction(group, area))
-```
 
-```{r}
-# zD.gls <- gls(zDegree ~ mods, data = warp)
-# zD.emm <- emmeans(zD.gls, "mods")
-# zD.fac <- update(zD.emm, levels = list(
-#                 group = c("normal", "overweight", "obese"), 
-#                 area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
-#                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
-#                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
-# 
-# contrast(zD.fac, "pairwise", by = "area", adjust = "fdr")
-# cer_z<-subset(warp, warp$area == "Cerebellum")
-# violin(cer_z,cer_z$group,cer_z$zDegree)
-```
-Cerebellum
-Ventral Diencephalon
-
-```{r}
 PC.gls <- gls(PC ~ mods, data = warp)
 PC.emm <- emmeans(PC.gls, "mods")
 PC.fac <- update(PC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
-                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
@@ -450,41 +394,43 @@ contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
 DMN_PC<-subset(warp, warp$area == "Default")
 violin(DMN_PC, DMN_PC$group, DMN_PC$PC)
 
-FP_PPC<-subset(warp, warp$area == "FrontoParietal")
-violin(FP_PPC, FP_PPC$group, FP_PPC$PC)
+mouth_PPC<-subset(warp, warp$area == "Smmouth")
+mouth_PPC
 
-vis_PPC<-subset(warp, warp$area == "Visual")
-violin(vis_PPC, vis_PPC$group, vis_PPC$PC)
+describeBy(mouth_PPC$PC,mouth_PPC$group)
+
+hand_PPC<-subset(warp, warp$area == "Smhand")
+violin(hand_PPC, hand_PPC$group, hand_PPC$PC)
+```
+```{r}
+summary(graph_df$module)
+gdf<-subset(graph_df, graph_df$module != 7)
+gdf<-subset(gdf, gdf$module != 8)
+gdf$module<-factor(gdf$module)
+summary(gdf$module)
+```
+
+```{r}
+table(gdf$group, gdf$module)
+warp_tour <- transform(gdf, mods = interaction(group, module))
 ```
 
 
 ```{r}
-# head(warp)
-clus.gls <- gls(clustering ~ mods, data = warp)
-clus.emm <- emmeans(clus.gls, "mods")
-clus.fac <- update(clus.emm, levels = list(
+mPC.gls <- gls(PC ~ mods, data = warp_tour)
+mPC.emm <- emmeans(mPC.gls, "mods")
+mPC.fac <- update(mPC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
-                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
-                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
+                area = c("0","1","2","3","4","5","6")))
 
-contrast(clus.fac, "pairwise", by = "area", adjust = "fdr")
+contrast(mPC.fac, "pairwise", by = "area", adjust = "fdr")
+
+PC_2<-subset(warp, warp$module == "2")
+violin(PC_2, PC_2$group, PC_2$PC)
+
+PC_0<-subset(warp, warp$module == "0")
+violin(PC_0, PC_0$group, PC_0$PC)
 ```
-
-```{r}
-cent.gls <- gls(centrality ~ mods, data = warp)
-cent.emm <- emmeans(cent.gls, "mods")
-cent.fac <- update(cent.emm, levels = list(
-                group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
-                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "None", "Putamen",
-                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
-
-contrast(cent.fac, "pairwise", by = "area", adjust = "fdr")
-```
-
-
-
 
 
 Nice function to make a pretty table
