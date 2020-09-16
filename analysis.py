@@ -1089,7 +1089,17 @@ def aesthetics(graph,node_size,font_size, font_family, font_weight, edge_att, pl
     aes['general']['plot_size']=plot_size #tuple 80,50
     return(aes)
 
-
+def cal_edges(dic, basepath, group):
+    edges = {}
+    for sub, graph in dic.items():
+        print(sub)
+        _df = nx.to_pandas_edgelist(graph)
+        _df.loc[(_df['source'] == _df['target']), 'weight'] = 0
+        _df = _df[_df['source'] != _df['target']]
+        _df['group']=group
+        _df['z_weight']=zscore(_df['weight'])
+        edges[sub]=_df
+    return(edges)
 
 # for key, values in summary_dict.items():
 #     print(key)

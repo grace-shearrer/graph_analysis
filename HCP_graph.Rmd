@@ -108,6 +108,13 @@ dim(fc_tbl)
 
 tbl<-join(tbl,fc_tbl)
 ```
+## Edge data
+```{r}
+edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_edge_data.csv", sep=",", header = T)
+mod_edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_comm_edge_data.csv", sep=",", header = T)
+
+```
+
 # joining individual sub data 
 ```{r, echo=FALSE}
 data<-join(tbl,demos)
@@ -225,7 +232,7 @@ indx<-names(clus_vals)
 
 l <- list()
 for (i in seq(1, length(clus_vals), by= 1)){
-  print(paste("start", i))
+#  print(paste("start", i))
   df <- dfer(indx[i],clus_vals[i])
   colnames(df) <- c("IC", "contrast", "estimate","SE","df", "lower.CL", "upper.CL", "t.ratio", "p.value")
   l[[i]] <-df
@@ -248,7 +255,7 @@ indx<-names(cen_vals)
 
 l <- list()
 for (i in seq(1, length(cen_vals), by= 1)){
-  print(paste("start", i))
+#  print(paste("start", i))
   df <- dfer(indx[i],cen_vals[i])
   colnames(df) <- c("IC", "contrast", "estimate","SE","df", "lower.CL", "upper.CL", "t.ratio", "p.value")
   l[[i]] <-df
@@ -375,9 +382,6 @@ violin(graph_df, graph_df$group, graph_df$clustering)
 violin(graph_df, graph_df$group, graph_df$PC)
 ```
 
-
-
-
 ```{r}
 warp <- transform(graph_df, mods = interaction(group, area))
 
@@ -423,6 +427,8 @@ mPC.fac <- update(mPC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("0","1","2","3","4","5","6")))
 
+mPC.emm@model.info[["xlev"]][["mods"]]
+
 contrast(mPC.fac, "pairwise", by = "area", adjust = "fdr")
 
 PC_2<-subset(warp, warp$module == "2")
@@ -430,6 +436,43 @@ violin(PC_2, PC_2$group, PC_2$PC)
 
 PC_0<-subset(warp, warp$module == "0")
 violin(PC_0, PC_0$group, PC_0$PC)
+```
+## Testing edges 
+```{r}
+mod_edge_df$source<-as.factor(mod_edge_df$source)
+mod_edge_df$target<-as.factor(mod_edge_df$target)
+
+
+edf<-subset(mod_edge_df, mod_edge_df$source != 7)
+edf<-subset(edf, edf$source != 8)
+edf<-subset(edf, edf$target != 7)
+edf<-subset(edf, edf$target != 8)
+
+edf$source<-factor(edf$source)
+edf$target<-factor(edf$target)
+
+summary(edf$source)
+summary(edf$target)
+```
+
+
+```{r}
+head(edf)
+warp_edges <- transform(edf, mods = interaction(group, source, target))
+head(warp_edges)
+levels(warp_edges$mods)
+zW.gls <- gls(z_weight ~ mods, data = warp_edges)
+zW.emm <- emmeans(zW.gls, "mods")
+zW.fac <- update(zW.emm, levels = list(
+                group = c("no", "ov", "ob"), 
+                area = c("0.1","0.2","0.3","0.4", "0.5", "0.6", 
+                         "1.2","1.3","1.4","1.5","1.6",
+                         "2.3","2.4","2.5","2.6",
+                         "3.4","3.5","3.6",
+                         "4.5","4.6",
+                         "5.6")))
+
+contrast(zW.fac, "pairwise", by = "area", adjust = "fdr")
 ```
 
 
