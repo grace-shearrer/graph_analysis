@@ -2,14 +2,11 @@ import pandas as pd
 import glob
 import os
 import numpy as np
-
+import networkx as nx
 import pickle
 
 import statistics
 # import community
-import matplotlib
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
 import community
 import analysis as an
 import multiprocessing
@@ -29,6 +26,11 @@ update_dict=an.onetoughjar(latest_file)
 #     print(key)
 #     update_dict[key] = {**value[0], **value[1]}
 
+# get label stuff
+labels = pd.read_csv(os.path.join(basepath,'tmp','mod_labels.csv'), sep=',')
+labels.set_index('Index', inplace=True)
+label_dict = labels.to_dict('index')
+
 
 list1=[update_dict['no'],'normal']
 list2=[update_dict['ov'],'overweight']
@@ -47,4 +49,11 @@ if __name__ == '__main__':
 
 
     subgraph_dict={'no':no,'ov':ov,'ob':ob}
+    #apply label stuff
+    for group, dat in subgraph_dict.items():
+        print(group)
+        for mod, graph in dat.items():
+            nx.set_node_attributes(graph, label_dict, 'labels')
+
+
     an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',subgraph_dict,'7_subgraph_dict')

@@ -344,21 +344,21 @@ balloonplot(table(no_5$node_type, no_5$area), main ="Module Frequencies per func
 ov_<-subset(graph_df, graph_df$group == "overweight")
 balloonplot(table(ov_$module, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
-ov_0<-subset(ov_, ov_$module == 2)
-balloonplot(table(ov_0$node_type, ov_0$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+ov_2<-subset(ov_, ov_$module == 2)
+balloonplot(table(ov_2$node_type, ov_2$area), main ="Module Frequencies per sensory high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
-ov_5<-subset(ov_, ov_$module == 5)
-balloonplot(table(ov_5$node_type, ov_5$area), main ="Module Frequencies per functional network high BMI module 5", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+ov_6<-subset(ov_, ov_$module == 6)
+balloonplot(table(ov_6$node_type, ov_6$area), main ="Module Frequencies per subcortical high BMI module 5", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
 
 ob_<-subset(graph_df, graph_df$group == "obese")
 balloonplot(table(ob_$module, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
-ob_2<-subset(ob_, ob_$module == 2)
-balloonplot(table(ob_2$node_type, ob_2$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+ob_4<-subset(ob_, ob_$module == 4)
+balloonplot(table(ob_4$node_type, ob_4$area), main ="Module Frequencies per sensory very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
 ob_6<-subset(ob_, ob_$module == 6)
-balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per functional network very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per subcortical very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 ```
 ```{r}
 graph_df$module<-as.factor(graph_df$module)
@@ -454,6 +454,38 @@ edf$target<-factor(edf$target)
 summary(edf$source)
 summary(edf$target)
 ```
+```{r}
+warp_edges <- transform(edf, mods = interaction(group, source, target))
+head(warp_edges)
+# no.2.5 vs. ov.2.6 vs. ob.4.6
+warp_edges$newvar <- NA
+warp_edges[warp_edges$mods == 'no.2.5', "newvar"] <- 'aBMI'
+warp_edges[warp_edges$mods == 'ov.2.6', "newvar"] <- 'hBMI'
+warp_edges[warp_edges$mods == 'ob.4.6', "newvar"] <- 'vhBMI'
+
+summary(as.factor(warp_edges$newvar))
+head(warp_edges)
+warp_edges$newvar<-as.factor(warp_edges$newvar)
+levels(warp_edges$newvar)
+warp_spec<-warp_edges[complete.cases(warp_edges), ]
+head(warp_spec)
+warp_spec$mods<-factor(warp_spec$mods)
+levels(warp_spec$mods)
+```
+```{r}
+warp_spec <- transform(warp_spec, mods = interaction(group, source, target))
+warp_spec$mods<-factor(warp_spec$mods)
+levels(warp_spec$mods)
+head(warp_spec)
+zW1.gls <- gls(z_weight ~ newvar, data = warp_spec)
+zW1.gls
+zW1.emm <- emmeans(zW1.gls, "newvar")
+
+contrast(zW1.emm, "pairwise",  adjust = "fdr")
+
+violin(warp_spec, warp_spec$newvar, warp_spec$z_weight)
+```
+```
 
 
 ```{r}
@@ -463,17 +495,29 @@ head(warp_edges)
 levels(warp_edges$mods)
 zW.gls <- gls(z_weight ~ mods, data = warp_edges)
 zW.emm <- emmeans(zW.gls, "mods")
+zW.emm@grid
 zW.fac <- update(zW.emm, levels = list(
                 group = c("no", "ov", "ob"), 
-                area = c("0.1","0.2","0.3","0.4", "0.5", "0.6", 
+                edge = c("0.1","0.2","0.3","0.4", "0.5", "0.6", 
                          "1.2","1.3","1.4","1.5","1.6",
                          "2.3","2.4","2.5","2.6",
                          "3.4","3.5","3.6",
                          "4.5","4.6",
                          "5.6")))
-
-contrast(zW.fac, "pairwise", by = "area", adjust = "fdr")
+total <- contrast(zW.fac, "pairwise", by = "area", adjust = "fdr")
+total
 ```
+## `xtable` with HTML
+```{r, echo=FALSE, message=FALSE, results='asis'}
+library(viridisLite)
+## `knitr::kable` 
+knitr::kable(total, format = "html", digits = 2, align = c('l','l','c','c','c','c','c'), col.names = c("Contrast","Edge connection","Estimate","Standard error", "df", "t-ratio", "pFDR"))%>%
+  kable_styling(full_width = FALSE, position = "left")
+```  
+
+``` 
+
+
 
 
 Nice function to make a pretty table
@@ -625,6 +669,7 @@ all
 drops <- c("VALUE")
 all<-all[ , !(names(all) %in% drops)]
 ```
+
 ```{r}
 colz<-c("Race/Ethncity",
         "n","mean","SD",
