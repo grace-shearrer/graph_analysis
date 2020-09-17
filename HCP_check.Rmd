@@ -1,0 +1,16 @@
+---
+title: "HCP_check"
+author: "GShearrer"
+date: "9/17/2020"
+output: html_document
+---
+
+This document is to double check the results from the HCP_graph document
+```{r}
+dat_check <-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/complete_data.csv", sep=",", header=T)
+head(dat_check)
+dat_check$subject <- as.factor(dat_check$subject)
+colnames(dat_check)
+```
+```
+

@@ -45,3 +45,27 @@ for group, dat in save_dict['NR'].items():
 sub_comm_edge_df=pd.concat(list(tmp_dict.values()))
 sub_comm_edge_df.to_csv(os.path.join(basepath,'tmp','sub_comm_edge_data.csv'), sep=',')
 an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict['NR'],'10_subedge_dict')
+#making a dataframe
+subedge_dict = save_dict['NR']
+_dfs=[]
+for group, data in subedge_dict.items():
+    print(group)
+    for sub, dat in data['graphs'].items():
+        print(sub)
+        tmp = pd.DataFrame.from_dict(dict(dat.nodes(data =True)), orient='index')
+        tmp['subject'] = sub
+        tmp['group'] = group
+        tmp['IC'] = tmp.index
+        tmp['IC']=tmp['IC']+1
+        _dfs.append(tmp)
+total = pd.concat(_dfs)
+latest_file=an.find_latest(os.path.join(basepath,'tmp'),'demo*')
+demo_dict=an.onetoughjar(latest_file)
+demo_df = pd.DataFrame.from_dict(demo_dict['NR'], orient='index')
+demo_df['subject'] = demo_df.index
+demo_df.reset_index(inplace = True)
+demo_df["subject"]=pd.to_numeric(demo_df["subject"])
+total["subject"]=pd.to_numeric(total["subject"])
+complete_df=pd.merge(demo_df, total, on="subject")
+complete_df.to_csv(os.path.join(basepath,'tmp','complete_data.csv'), sep=',')
+an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',complete_df,'11_complete_df')
