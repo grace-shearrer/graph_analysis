@@ -347,10 +347,6 @@ CC0.emm <- emmeans(CC0.gls, "other")
 
 contrast(CC0.emm, "pairwise",  adjust = "fdr")
 ```
-```{r}
-head(warp)
-```
-
 
 # Centrality 
 ## By IC
@@ -376,7 +372,7 @@ contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
 ```{r}
 Cen.gls <- gls(centrality_log ~ mods, data = warp_func)
 Cen.emm <- emmeans(Cen.gls, "mods")
-CC.fac <- update(Cen.emm, levels = list(
+Cen.fac <- update(Cen.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
@@ -463,8 +459,8 @@ contrast(Cen0.emm, "pairwise",  adjust = "fdr")
 ```{r}
 colnames(warp)
 warp$PC_z<-scale(warp$PC)
-describeBy(warp$PC_z, warp$group)
-warp<-subset(warp, warp$PC_z > -0.03)
+# describeBy(warp$PC_z, warp$group)
+# warp<-subset(warp, warp$PC_z > -0.03)
 violin(d = warp, x = warp$group, y = warp$PC_z)
 PC.gls <- gls(PC_log ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
 PC.emm <- emmeans(PC.gls, "mods")
@@ -572,29 +568,26 @@ contrast(PC0.emm, "pairwise",  adjust = "fdr")
 # Results summary
 ## 3.3 Clustering coefficient
 ### 3.3.1 Nodal
-After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), differences were observed between the aBMI and hBMI groups in node 17 (t-ratio = 0.43, SE= 0.01, pFDR = 0.03) and  node 30 (t-ratio = 3.36, SE= 0.01, pFDR = 0.002). Additionally, differences were seen between the hBMI and vhBMI groups in node 76 (t-ratio = 2.70, SE= 0.01, pFDR = 0.02). No differences were observed between the aBMI and vhBMI groups. 
-### 3.3.2 Functional Networks
+After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), in node 23 the aBMI group exhibited higher clustering coefficient compared to the hBMI group (t-ratio = 2.84, SE=0.02, pFDR3 = 0.01). In node 74, the aBMI group has higher clustering coefficient compared to the vhBMI group (t-ratio= 2.62, SE= 0.01, pFDR3= 0.01), and the hBMI group showed increased clustering coefficient compared the the vhBMI group (t-ratio= 3.20, SE= 0.01, pFDR3= 0.004). 
+3.3.2 Functional Networks
 No differences in any functional networks were seen between the BMI groups. 
 ### 3.3.3 Modules
 Between the sensory modules, aBMI module 2 trended towards increased clustering coefficient compared to the vhBMI module 4 (t-ratio=2.23 , SE= 0.02, pFDR= 0.09). The aBMI group additionally showed increased clustering coefficients within the subcortical module (module 5) compared to the vhBMI subcortical module (module 6) (t-ratio= 2.79, SE= 0.02, pFDR= 0.03).
 
-## 3.4 Participation coefficient
-### 3.4.1 Nodal
-No differences between groups by nodal participation coefficient were observed. 
+# 3.4 Participation coefficient
+## 3.4.1 Nodal
+No differences between groups by nodal participation coefficient were observed with the more stringent (n=300) correction. Using the less stringent (n=3) correction for multiple comparisons, in node 14  the hBMI group exhibited higher participation coefficient compared to both the aBMI (t-ratio= -2.38, SE= 0.06, pFDR3= 0.03) and the vhBMI groups (t-ratio= 2.88, SE= 0.08, pFDR3= 0.01). In area 33, the hBMI again showed increased participation coefficient compared to the aBMI group (t-ratio= -2.49, SE= 0.07, pFDR3= 0.04). 
 ### 3.4.2 Functional Networks
-Within the auditory functional network the vhBMI group showed increased participation coefficient compared to both the aBMI (t-ratio= -2.52, SE= 1.16, pFDR= 0.02) and the hBMI groups (t-ratio= -2.54, SE= 1.16, pFDR= 0.02). Similarly, in the frontoparietal network, the hBMI group had higher participation coefficient compared to both the aBMI (t-ratio= -2.56, SE= 0.47, pFDR= 0.03) and vhBMI (t-ratio= 2.30, SE= 0.47, pFDR= 0.04) groups. The participation coefficient in the somatosensory hand network for the vhBMI was higher compared to the aBMI (t-ratio= -3.78, SE= 0.58, pFDR= 0.0005) and the hBMI (t-ratio=-3.64 , SE= 0.58, pFDR= 0.0005) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a higher participation coefficient compared to the aBMI group (t-ratio= -2.88, SE= 0.82, pFDR= 0.006) and the hBMI (t-ratio= -2.90, SE= 0.82, pFDR= 0.006) group.  
+Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (t-ratio= 2.15, SE= 0.18, pFDR= 0.05) and the hBMI groups (t-ratio= 2.17, SE= 0.18, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (t-ratio= 3.40, SE= 0.09, pFDR= 0.002) and the hBMI (t-ratio=3.30 , SE= 0.09, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (t-ratio= 2.60, SE= 0.13, pFDR= 0.01) and the hBMI (t-ratio= 2.61, SE= 0.13, pFDR= 0.01) group.  
 ### 3.4.3 Module
-Within the visual modules, the vhBMI showed lower participation coefficients compared to both the aBMI (t-ratio= 4.80, SE= 0.28, pFDR= 0.0003) and the hBMI groups (t-ratio= 4.37, SE= 0.28, pFDR= 0.0004). Conversely, the participation coefficient for the vhBMI was higher in the sensory module (module 4) compared to the aBMI (module 2) (t-ratio=-8.54 , SE= 0.27 pFDR< 0.0001 ) and hBMI (module 2) (t-ratio= -8.17, SE= 0.27, pFDR< 0.0001).  
-
+Within the visual modules, the vhBMI showed higher participation coefficients compared to both the aBMI (t-ratio= -5.60, SE= 0.04, pFDR< 0.0001) and the hBMI groups (t-ratio=-4.98, SE= 0.04, pFDR= 0.0001). Conversely, the participation coefficient for the vhBMI was lower in the sensory module (module 4) compared to the aBMI (module 2) (t-ratio=-10.27 , SE= 0.03 pFDR< 0.0001 ) and hBMI (module 2) (t-ratio= 9.93, SE= 0.03, pFDR< 0.0001). 
 ## 3.6 Betweenness centrality
 ### 3.6.1 Nodal
-No differences were detected between BMI groups after correcting for multiple comparisons (n=300, p uncorrected < 0.0002). Using the less stringent multiple comparison (n=3, p uncorrected < 0.01; pFDR < 0.05) differences were observed between aBMI and hBMI  in node 25 (t-ratio= -2.31, SE= 0.0003, pFDR= 0.03), 
-When comparing hBMI and vBMI differences were observed in node 25 (t-ratio= 2.36, SE= 0.0003, pFDR= 0.03), 
+No differences were detected between BMI groups after correcting for multiple comparisons (n=300). Using the less stringent multiple comparison correction (n=3),  in node 14 the aBMI group had higher centrality compared to the hBMI group (t-ratio= 2.09, SE= 0.002, pFDR3= 0.05), and the vhBMI had higher centrality compared to the hBMI group (t-ratio= -2.83, SE= 0.003, pFDR3= 0.01). In node 18, the hBMI had higher centrality compared to both the aBMI (t-ratio= -2.38, SE= 0.002, pFDR3= 0.03) and vhBMI (t-ratio= 2.44, SE= 0.002, pFDR3= 0.03) groups. In node 42, the aBMI had higher centrality compared to the hBMI (t-ratio= 2.39, SE= 0.002, pFDR3= 0.02), and the vhBMI group exhibited higher centrality compared to the hBMI group (t-ratio= -3.47, SE= 0.003, pFDR3= 0.001). In node 51, the hBMI group exhibited lower centrality compared to both the aBMI (t-ratio= 2.85, SE= 0.002, pFDR3= 0.01) and the vhBMI (t-ratio= -1.94, SE= 0.003, pFDR3= 0.08) groups. In node 87, the vhBMI group exhibited decreased centrality compared to both the aBMI (t-ratio= 2.56, SE= 0.002, pFDR3= 0.02) and the hBMI (t-ratio= 3.02, SE= 0.002, pFDR3= 0.01) groups. 
 ### 3.6.2 Functional Networks
 No differences in any functional networks were seen between the BMI groups.
 ### 3.6.3 Module 
-The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (t-ratio= 3.21, SE= 0.001, pFDR= 0.006). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (t-ratio= 3.24, SE= 0.001, pFDR= 0.006). 
-
+The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (t-ratio= 3.07, SE= 0.11, pFDR3= 0.009). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (t-ratio= 3.14, SE= 0.11, pFDR3= 0.009). 
 
 # Post hoc analysis of behavioral measures
 ## Data prep
@@ -643,8 +636,10 @@ warp_1[warp_1$mods == 'ov.Auditory', "auditory"] <- 'hBMIauditory'
 warp_1[warp_1$mods == 'ob.Auditory', "auditory"] <- 'vhBMIauditory'
 colnames(warp_1)
 ```
+
 ```{r}
-summary(warp_1$PC_z)
+64-28
+36*3
 ```
 
 
@@ -652,21 +647,21 @@ summary(warp_1$PC_z)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_1[31:64])
+names<-colnames(warp_1[28:64])
 
 aud <- list()
-for (i in seq(31, 64, by= 1)){
+for (i in seq(28, 64, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[68], y = warp_1[i], z=warp_1[67], data = warp_1)
+  out<-fit_function(x=warp_1[70], y = warp_1[i], z=warp_1[66], data = warp_1)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   aud[[i]] <-list(out,df, test.emm)
 }
 
 aud2<-list()
-for(i in seq(1, 33, by = 1)){
+for(i in seq(1, 36, by = 1)){
   print(paste ("this is ",i))
-  df<-l[31:64][[i]][[2]]
+  df<-aud[28:64][[i]][[2]]
   df$var<-names[i]
   aud2[[i]] <-list(df)
   }
@@ -675,89 +670,18 @@ df_PCaud<-bind_rows(aud2)
 df_PCaud$pFDR<-p.adjust(df_PCaud$p.value, method = "BH")
 df_PCaud[df_PCaud$pFDR <= 0.05, ] 
 ```
-```{r}
-noise.emm <- emmeans(noise.lm, ~ size * side * type)
-
-out<-fit_function(x=warp_1[68], y = warp_1[31], z=warp_1[67], data = warp_1)
-out
-test.emm <- emmeans(out, ~ x*z)
-test.emm
-contrast(test.emm, "pairwise", adjust = "fdr")
-
-df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-aud[[i]] <-list(out,df, test.emm)
-```
-
-```{r}
-hist()
-```
 
 
-```{r}
-confint(aud[31:64][[1]][[1]])
-aud[31:64][[1]][[2]]
-aud[31:64][[1]][[3]]
-
-contrast(aud[31:64][[1]][[3]], "pairwise")
-```
-
-```{r}
-names
-```
-
-#### frontoparietal
-```{r}
-# View(module_df)
-warp_1 <- transform(module_df, mods = interaction(group, area))
-warp_1$PC_z<-scale(warp_1$PC)
-warp_1<-subset(warp_1, warp_1$PC_z > -3)
-levels(warp_1$mods)
-warp_1$FrontoParietal <- NA
-warp_1[warp_1$mods == 'no.FrontoParietal', "FrontoParietal"] <- 'aBMIFrontoParietal'
-warp_1[warp_1$mods == 'ovFrontoParietal', "FrontoParietal"] <- 'hBMIFrontoParietal'
-warp_1[warp_1$mods == 'ob.FrontoParietal', "FrontoParietal"] <- 'vhBMIFrontoParietal'
-colnames(warp_1)
-```
-
-
-```{r}
-# y is behavioral measure
-# x is the group
-# z is the graph measures
-names<-colnames(warp_1[31:64])
-
-l <- list()
-for (i in seq(31, 64, by= 1)){
-  print(paste("start", i))
-  out<-fit_function(x=warp_1[68], y = warp_1[i], z=warp_1[67], data = warp_1)
-  test.emm <- emmeans(out, "x")
-  df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
-}
-
-l2<-list()
-for(i in seq(1, 33, by = 1)){
-  print(paste ("this is ",i))
-  df<-l[31:64][[i]][[2]]
-  df$var<-names[i]
-  l2[[i]] <-list(df)
-  }
-df_PCFP<-bind_rows(l2)
-df_PCFP$pFDR<-p.adjust(df_PCFP$p.value, method = "BH")
-df_PCFP[df_PCFP$p.value <= 0.05, ] 
-```
 #### somatosensory hand
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
-warp_1$PC_z<-scale(warp_1$PC)
-warp_1<-subset(warp_1, warp_1$PC_z > -3)
 
 warp_1$Smhand <- NA
 warp_1[warp_1$mods == 'no.Smhand', "Smhand"] <- 'aBMISmhand'
 warp_1[warp_1$mods == 'ovSmhand', "Smhand"] <- 'hBMISmhand'
 warp_1[warp_1$mods == 'ob.Smhand', "Smhand"] <- 'vhBMISmhand'
-colnames(warp_1)
+colnames(warp_1$PC_log)
 ```
 
 
@@ -765,21 +689,21 @@ colnames(warp_1)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_1[31:64])
+names<-colnames(warp_1[28:64])
 
 l <- list()
-for (i in seq(31, 64, by= 1)){
+for (i in seq(28, 64, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[68], y = warp_1[i], z=warp_1[67], data = warp_1)
+  out<-fit_function(x=warp_1[69], y = warp_1[i], z=warp_1[65], data = warp_1)
   test.emm <- emmeans(out, "x")
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   l[[i]] <-list(out,df)
 }
 
 l2<-list()
-for(i in seq(1, 33, by = 1)){
+for(i in seq(1, 36, by = 1)){
   print(paste ("this is ",i))
-  df<-l[31:64][[i]][[2]]
+  df<-l[28:64][[i]][[2]]
   df$var<-names[i]
   l2[[i]] <-list(df)
   }
@@ -791,8 +715,6 @@ df_PChand[df_PChand$p.value <= 0.05, ]
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
-warp_1$PC_z<-scale(warp_1$PC)
-warp_1<-subset(warp_1, warp_1$PC_z > -3)
 
 warp_1$Smmouth <- NA
 warp_1[warp_1$mods == 'no.Smmouth', "Smmouth"] <- 'aBMISmmouth'
@@ -806,21 +728,21 @@ colnames(warp_1)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_1[31:64])
+names<-colnames(warp_1[28:65])
 
 l <- list()
-for (i in seq(31, 64, by= 1)){
+for (i in seq(31, 65, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[68], y = warp_1[i], z=warp_1[67], data = warp_1)
+  out<-fit_function(x=warp_1[69], y = warp_1[i], z=warp_1[65], data = warp_1)
   test.emm <- emmeans(out, "x")
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   l[[i]] <-list(out,df)
 }
 
 l2<-list()
-for(i in seq(1, 33, by = 1)){
+for(i in seq(1, 37, by = 1)){
   print(paste ("this is ",i))
-  df<-l[31:64][[i]][[2]]
+  df<-l[28:65][[i]][[2]]
   df$var<-names[i]
   l2[[i]] <-list(df)
   }
