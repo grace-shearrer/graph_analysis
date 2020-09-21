@@ -6,11 +6,794 @@ output: html_document
 ---
 
 This document is to double check the results from the HCP_graph document
+
+# Functions
+```{r, echo=FALSE}
+cbPalette <- c( "#E69F00", "#56B4E9",  "#CC79A7")
+violin <- function(d, x, y){
+  plot1<-ggplot(d, aes(factor(x), y)) + 
+    geom_violin(aes(fill = x),stat = "ydensity",draw_quantiles = c(0.25, 0.5, 0.75))+scale_fill_manual(values=cbPalette)+theme_classic()
+  return(plot1)
+}
+```
+
+
 ```{r}
 dat_check <-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/complete_data.csv", sep=",", header=T)
 head(dat_check)
 dat_check$subject <- as.factor(dat_check$subject)
+dat_check$Subject<-dat_check$subject
+head(dat_check$Subject)
 colnames(dat_check)
 ```
+
+
+#  Loading in the data
+## Demographics
+```{r, echo=FALSE}
+dat_check$Age_c<-scale(dat_check$Age_in_Yrs, scale = FALSE)
+dat_check$HBA1c_c<-scale(dat_check$HbA1C, scale = FALSE)
+dat_check$group <- ordered(dat_check$group, levels = c("no", "ov", "ob"))
+
+dat_check$race_eth[dat_check$Race == "White" & dat_check$Ethnicity == "Hispanic/Latino" ] <- "White and Hispanic"
+dat_check$race_eth[dat_check$Race == "Black or African Am." & dat_check$Ethnicity =="Hispanic/Latino" ] <- "Black or African American and Hispanic"
+dat_check$race_eth[dat_check$Race == "Am. Indian/Alaskan Nat." & dat_check$Ethnicity =="Hispanic/Latino" ] <- "Native American and Hispanic"
+dat_check$race_eth[dat_check$Race == "Asian/Nat. Hawaiian/Othr Pacific Is." & dat_check$Ethnicity =="Hispanic/Latino" ] <- "Asian and Hispanic"
+dat_check$race_eth[dat_check$Race == "More than one" & dat_check$Ethnicity =="Hispanic/Latino" ] <- "Multi-racial and Hispanic"
+dat_check$race_eth[dat_check$Race == "Unknown or Not Reported" & dat_check$Ethnicity =="Hispanic/Latino" ] <- "Unknown or not reported and Hispanic"
+
+dat_check$race_eth[dat_check$Race == "White" &dat_check$Ethnicity == "Not Hispanic/Latino"] <- "White"
+dat_check$race_eth[dat_check$Race == "Black or African Am." & dat_check$Ethnicity =="Not Hispanic/Latino" ] <- "Black or African American"
+dat_check$race_eth[dat_check$Race == "Am. Indian/Alaskan Nat." & dat_check$Ethnicity =="Not Hispanic/Latino" ] <- "Native American"
+dat_check$race_eth[dat_check$Race == "Asian/Nat. Hawaiian/Othr Pacific Is." & dat_check$Ethnicity == "Not Hispanic/Latino"] <- "Asian"
+dat_check$race_eth[dat_check$Race == "More than one" & dat_check$Ethnicity =="Not Hispanic/Latino" ] <- "Multi-racial"
+dat_check$race_eth[dat_check$Race == "Unknown or Not Reported" & dat_check$Ethnicity =="Not Hispanic/Latino" ] <- "Unknown or not reported"
+
+dat_check$race_eth[dat_check$Race == "White" & dat_check$Ethnicity =="Unknown or Not Reported"] <- "White"
+dat_check$race_eth[dat_check$Race == "Black or African Am." & dat_check$Ethnicity =="Unknown or Not Reported"] <- "Black or African American"
+dat_check$race_eth[dat_check$Race == "Am. Indian/Alaskan Nat." & dat_check$Ethnicity =="Unknown or Not Reported" ] <- "Native American"
+dat_check$race_eth[dat_check$Race == "Asian/Nat. Hawaiian/Othr Pacific Is." & dat_check$Ethnicity =="Unknown or Not Reported"] <- "Asian"
+dat_check$race_eth[dat_check$Race == "More than one" & dat_check$Ethnicity =="Unknown or Not Reported" ] <- "Multi-racial"
+dat_check$race_eth[dat_check$Race == "Unknown or Not Reported" & dat_check$Ethnicity =="Unknown or Not Reported" ] <- "Unknown or not reported"
+
+dat_check$race_eth <- ordered(dat_check$race_eth, levels = c("White", "Black or African American"  , "Asian" ,
+                                             "Multi-racial" , "Unknown or not reported and Hispanic","Multi-racial and Hispanic",
+                                             "Black or African American and Hispanic", "White and Hispanic"))
+
+
 ```
+## Unresitricted data
+```{r, echo=FALSE}
+unres<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/unrestricted_gshearrer_4_19_2018_11_31_37.csv", header=T, sep=",")
+myvars<-c("Subject","Gender")
+unres<-unres[myvars]
+unres$Subject<-unres$Subject
+head(unres)
+```
+# joining individual sub data 
+```{r, echo=FALSE}
+data<-join(dat_check,unres)
+dim(data)
+head(data)
+```
+
+
+## Graph data
+```{r, echo=FALSE}
+graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data.csv", sep=",", header=T)
+head(graph_df)
+graph_df$group <- factor(graph_df$group, levels = c("normal","overweight","obese"))
+```
+
+```{r}
+vars<-c("area",  "X")
+area_df<-graph_df[vars]
+colnames(area_df)<-c("area", "X")
+head(area_df)
+```
+
+```{r}
+area_df2<-join(area_df, data)
+head(area_df2)
+area_df2<-area_df2[complete.cases(area_df2$index),]
+```
+
+```{r}
+colnames(data)
+```
+
+# Cleanup, center, ect
+```{r, echo=FALSE}
+cols <- c("Subject","Gender" ,"ZygosityGT", "Mother_ID","Father_ID","group","race_eth","modules","IC")
+
+data %<>% mutate_at(cols, funs(factor(.)))
+# str(data[100:114])
+data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
+head(data)
+```
+
+```{r, echo=FALSE}
+levels(graph_df$area)
+graph_df$area<-revalue(graph_df$area, c("cerebellum"="Cerebellum"))
+graph_df$area<-revalue(graph_df$area, c("None"=""))
+graph_df$module<-as.factor(graph_df$module)
+```
+
+
+## Contrasts for demographics
+```{r, echo=FALSE}
+dat<-data[!duplicated(data[,c('Subject')]),]
+levels(dat$group)    
+levels(dat$race_eth)
+
+#          no  ov  ob
+cons<- list(
+  noVov = c(1, -1,  0),
+  noVob = c(1,  0, -1),
+  ovVob = c(0,  1, -1)
+) 
+```
+# Covariates
+## Age
+```{r, echo=FALSE}
+dm1<-lm(Age_c~group, data=dat)
+summary(dm1)
+lsq_dm1 = lsmeans(dm1, "group")
+contrast(lsq_dm1, cons, adjust='fdr')
+
+violin(dat,dat$group,dat$Age_c)
+describeBy(dat$Age_in_Yrs, dat$group)
+## No difference in age 
+```
+
+# BMI
+```{r, echo=FALSE}
+dm2<-lm(BMI~group, data=dat)
+lsq_dm2 = lsmeans(dm2, "group")
+contrast(lsq_dm2, cons, adjust='fdr')
+## Sanity check difference between the groups
+violin(dat,dat$group,dat$BMI)
+describeBy(dat$BMI, dat$group)
+```
+
+#HBA1c
+```{r, echo=FALSE}
+dm3<-lm(HBA1c_c~group, data=dat)
+summary(dm3)
+lsq_dm3 = lsmeans(dm3, "group")
+contrast(lsq_dm3, cons, adjust='fdr')
+
+violin(dat,dat$group,dat$HbA1C)
+describeBy(dat$HbA1C, dat$group)
+```
+
+
+## sex
+```{r, echo=FALSE}
+chisq.test(table(dat$group, dat$Gender))
+tapply(dat$group, dat$Gender, summary)
+
+balloonplot(table(dat$group, dat$Gender), main ="Gender Frequencies", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, colmar=5, dotcolor=cbPalette)
+```
+## Race
+```{r, echo=FALSE}
+chisq.test(table(dat$group, dat$race_eth))
+tapply(dat$group, dat$race_eth, summary)
+
+balloonplot(table(dat$group, dat$race_eth), main ="Racial/Ethnic Frequencies", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
+```
+
+# Models
+```{r}
+#took out FC
+fit_function<-function(y,data){
+  fit<-lm(y~group*IC+Age_c+HBA1c_c+Gender+race_eth, data=data)
+  test.emm <- emmeans(fit, "group")
+  contest<-emmeans(test.emm, pairwise ~ group)
+  test.emm.s <- update(contest$contrasts, infer = c(TRUE, TRUE))
+  return(summary(test.emm.s))
+}
+
+dfer<-function(X,Y){
+  df<-data.frame(X,Y, stringsAsFactors=FALSE)
+  return(df)
+}
+```
+
+
+```{r}
+# IC
+warp <- transform(data, mods = interaction(group, IC))
+head(warp)
+# functional 
+warp_func <- transform(graph_df, mods = interaction(group, area))
+head(warp_func)
+# mod
+summary(graph_df$module)
+mdf<-subset(graph_df, graph_df$module != 7)
+mdf<-subset(mdf, mdf$module != 8)
+mdf$module<-factor(mdf$module)
+warp_mod <- transform(mdf, mods = interaction(group, module))
+summary(warp_mod$module)
+head(warp_mod)
+```
+
+# Clustering coefficient
+## By IC
+```{r}
+CC.gls <- gls(clustering ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
+CC.emm <- emmeans(CC.gls, "mods")
+CC.fac <- update(CC.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("1","2","3","4","5","6","7","8","9","10",
+                         "11","12","13","14","15","16","17","18","19","20",
+                         "21","22","23","24","25","26","27","28","29","30",
+                         "31","32","33","34","35","36","37","38","39","40",
+                         "41","42","43","44","45","46","47","48","49","50",
+                         "51","52","53","54","55","56","57","58","59","60",
+                         "61","62","63","64","65","66","67","68","69","70",
+                         "71","72","73","74","75","76","77","78","79","80",
+                         "81","82","83","84","85","86","87","88","89","90",
+                         "91","92","93","94","95","96","97","98","99","100")))
+
+contrast(CC.fac, "pairwise", by = "area", adjust = "fdr")
+```
+## By funtional network
+```{r}
+CC.gls <- gls(clustering ~ mods, data = warp_func)
+CC.emm <- emmeans(CC.gls, "mods")
+CC.fac <- update(CC.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
+
+contrast(CC.fac, "pairwise", by = "area", adjust = "fdr")
+```
+## By module
+```{r}
+# mod
+summary(graph_df$module)
+mdf<-subset(graph_df, graph_df$module != 7)
+mdf<-subset(mdf, mdf$module != 8)
+mdf$module<-factor(mdf$module)
+```
+### visual 
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$visual <- NA
+warp_mod[warp_mod$mods == 'normal.0', "visual"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.0', "visual"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.0', "visual"] <- 'vhBMI4'
+
+CC0.gls <- gls(clustering ~ visual, data = warp_mod, na.action = na.omit)
+CC0.emm <- emmeans(CC0.gls, "visual")
+
+contrast(CC0.emm, "pairwise",  adjust = "fdr")
+```
+### Sensory 
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+# no.2.5 vs. ov.2.6 vs. ob.4.6
+warp_mod$sensory <- NA
+warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.4', "sensory"] <- 'vhBMI4'
+
+CC0.gls <- gls(clustering ~ sensory, data = warp_mod, na.action = na.omit)
+CC0.emm <- emmeans(CC0.gls, "sensory")
+
+contrast(CC0.emm, "pairwise",  adjust = "fdr")
+```
+### DMN
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$DMN <- NA
+warp_mod[warp_mod$mods == 'normal.1', "DMN"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.1', "DMN"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.1', "DMN"] <- 'vhBMI4'
+
+CC0.gls <- gls(clustering ~ DMN, data = warp_mod, na.action = na.omit)
+CC0.emm <- emmeans(CC0.gls, "DMN")
+
+contrast(CC0.emm, "pairwise",  adjust = "fdr")
+```
+### subcortical
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$subcort <- NA
+warp_mod[warp_mod$mods == 'normal.5', "subcort"] <- 'aBMI5'
+warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
+warp_mod[warp_mod$mods == 'obese.6', "subcort"] <- 'vhBMI6'
+
+
+CC0.gls <- gls(clustering ~ subcort, data = warp_mod, na.action = na.omit)
+CC0.emm <- emmeans(CC0.gls, "subcort")
+
+contrast(CC0.emm, "pairwise",  adjust = "fdr")
+```
+### other
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$other <- NA
+warp_mod[warp_mod$mods == 'normal.3', "other"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.3', "other"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.3', "other"] <- 'vhBMI4'
+
+
+CC0.gls <- gls(clustering ~ other, data = warp_mod, na.action = na.omit)
+CC0.emm <- emmeans(CC0.gls, "other")
+
+contrast(CC0.emm, "pairwise",  adjust = "fdr")
+```
+
+
+# Centrality 
+## By IC
+```{r}
+Cen.gls <- gls(centrality ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
+Cen.emm <- emmeans(Cen.gls, "mods")
+Cen.fac <- update(Cen.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("1","2","3","4","5","6","7","8","9","10",
+                         "11","12","13","14","15","16","17","18","19","20",
+                         "21","22","23","24","25","26","27","28","29","30",
+                         "31","32","33","34","35","36","37","38","39","40",
+                         "41","42","43","44","45","46","47","48","49","50",
+                         "51","52","53","54","55","56","57","58","59","60",
+                         "61","62","63","64","65","66","67","68","69","70",
+                         "71","72","73","74","75","76","77","78","79","80",
+                         "81","82","83","84","85","86","87","88","89","90",
+                         "91","92","93","94","95","96","97","98","99","100")))
+
+contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
+```
+## By functional network 
+```{r}
+Cen.gls <- gls(centrality ~ mods, data = warp_func)
+Cen.emm <- emmeans(Cen.gls, "mods")
+CC.fac <- update(Cen.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
+
+contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
+```
+
+## By module
+### visual 
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$visual <- NA
+warp_mod[warp_mod$mods == 'normal.0', "visual"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.0', "visual"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.0', "visual"] <- 'vhBMI4'
+
+Cen0.gls <- gls(centrality ~ visual, data = warp_mod, na.action = na.omit)
+Cen0.emm <- emmeans(Cen0.gls, "visual")
+
+contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+```
+### Sensory 
+```{r}
+warp_mod$sensory <- NA
+warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.4', "sensory"] <- 'vhBMI4'
+
+Cen0.gls <- gls(centrality ~ sensory, data = warp_mod, na.action = na.omit)
+Cen0.emm <- emmeans(Cen0.gls, "sensory")
+
+contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+```
+### DMN
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$DMN <- NA
+warp_mod[warp_mod$mods == 'normal.1', "DMN"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.1', "DMN"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.1', "DMN"] <- 'vhBMI4'
+
+Cen0.gls <- gls(centrality ~ DMN, data = warp_mod, na.action = na.omit)
+Cen0.emm <- emmeans(Cen0.gls, "DMN")
+
+contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+```
+### subcortical
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$subcort <- NA
+warp_mod[warp_mod$mods == 'normal.5', "subcort"] <- 'aBMI5'
+warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
+warp_mod[warp_mod$mods == 'obese.6', "subcort"] <- 'vhBMI6'
+
+
+Cen0.gls <- gls(centrality ~ subcort, data = warp_mod, na.action = na.omit)
+Cen0.emm <- emmeans(Cen0.gls, "subcort")
+
+contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+```
+### other
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$other <- NA
+warp_mod[warp_mod$mods == 'normal.3', "other"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.3', "other"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.3', "other"] <- 'vhBMI4'
+
+
+Cen0.gls <- gls(centrality ~ other, data = warp_mod, na.action = na.omit)
+Cen0.emm <- emmeans(Cen0.gls, "other")
+
+contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+```
+
+
+# Participation coefficient
+## By IC
+```{r}
+warp$PC_z<-scale(warp$PC)
+describeBy(warp$PC_z, warp$group)
+warp<-subset(warp, warp$PC_z > -0.03)
+violin(d = warp, x = warp$group, y = warp$PC_z)
+PC.gls <- gls(PC_z ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
+PC.fac <- update(PC.emm, levels = list(
+                group = c("no", "ov", "ob"), 
+                area = c("1","2","3","4","5","6","7","8","9","10",
+                         "11","12","13","14","15","16","17","18","19","20",
+                         "21","22","23","24","25","26","27","28","29","30",
+                         "31","32","33","34","35","36","37","38","39","40",
+                         "41","42","43","44","45","46","47","48","49","50",
+                         "51","52","53","54","55","56","57","58","59","60",
+                         "61","62","63","64","65","66","67","68","69","70",
+                         "71","72","73","74","75","76","77","78","79","80",
+                         "81","82","83","84","85","86","87","88","89","90",
+                         "91","92","93","94","95","96","97","98","99","100")))
+
+contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+```
+
+```{r}
+warp_func$PC_z<-scale(warp_func$PC)
+warp_func<-subset(warp_func, warp_func$PC_z > -3)
+
+PC.gls <- gls(PC_z ~ mods, data = warp_func, na.action = na.omit)
+PC.emm <- emmeans(PC.gls, "mods")
+PC.emm
+PC.fac <- update(PC.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
+                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
+                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
+
+contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+```
+
+## By module
+### visual 
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
+warp_mod$PC_z<-scale(warp_mod$PC)
+warp_mod<-subset(warp_mod, warp_mod$PC_z > -3)
+
+head(warp_mod)
+warp_mod$visual <- NA
+warp_mod[warp_mod$mods == 'normal.0', "visual"] <- 'aBMI0'
+warp_mod[warp_mod$mods == 'overweight.0', "visual"] <- 'hBMI0'
+warp_mod[warp_mod$mods == 'obese.0', "visual"] <- 'vhBMI0'
+
+PC0.gls <- gls(PC_z ~ visual, data = warp_mod, na.action = na.omit)
+PC0.emm <- emmeans(PC0.gls, "visual")
+
+contrast(PC0.emm, "pairwise",  adjust = "fdr")
+```
+### Sensory 
+```{r}
+warp_mod$sensory <- NA
+warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.4', "sensory"] <- 'vhBMI4'
+
+PC0.gls <- gls(PC_z ~ sensory, data = warp_mod, na.action = na.omit)
+PC0.emm <- emmeans(PC0.gls, "sensory")
+
+contrast(PC0.emm, "pairwise",  adjust = "fdr")
+```
+### DMN
+```{r}
+warp_mod$DMN <- NA
+warp_mod[warp_mod$mods == 'normal.1', "DMN"] <- 'aBMI1'
+warp_mod[warp_mod$mods == 'overweight.1', "DMN"] <- 'hBMI1'
+warp_mod[warp_mod$mods == 'obese.1', "DMN"] <- 'vhBMI1'
+
+PC0.gls <- gls(PC_z ~ DMN, data = warp_mod, na.action = na.omit)
+PC0.emm <- emmeans(PC0.gls, "DMN")
+
+contrast(PC0.emm, "pairwise",  adjust = "fdr")
+```
+### subcortical
+```{r}
+warp_mod$subcort <- NA
+warp_mod[warp_mod$mods == 'normal.5', "subcort"] <- 'aBMI5'
+warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
+warp_mod[warp_mod$mods == 'obese.6', "subcort"] <- 'vhBMI6'
+
+
+PC0.gls <- gls(PC_z ~ subcort, data = warp_mod, na.action = na.omit)
+PC0.emm <- emmeans(PC0.gls, "subcort")
+
+contrast(PC0.emm, "pairwise",  adjust = "fdr")
+```
+### other
+```{r}
+warp_mod$other <- NA
+warp_mod[warp_mod$mods == 'normal.3', "other"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.3', "other"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.3', "other"] <- 'vhBMI4'
+
+
+PC0.gls <- gls(PC_z ~ other, data = warp_mod, na.action = na.omit)
+PC0.emm <- emmeans(PC0.gls, "other")
+
+contrast(PC0.emm, "pairwise",  adjust = "fdr")
+```
+
+# Results summary
+## 3.3 Clustering coefficient
+### 3.3.1 Nodal
+After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), differences were observed between the aBMI and hBMI groups in node 17 (t-ratio = 0.43, SE= 0.01, pFDR = 0.03) and  node 30 (t-ratio = 3.36, SE= 0.01, pFDR = 0.002). Additionally, differences were seen between the hBMI and vhBMI groups in node 76 (t-ratio = 2.70, SE= 0.01, pFDR = 0.02). No differences were observed between the aBMI and vhBMI groups. 
+### 3.3.2 Functional Networks
+No differences in any functional networks were seen between the BMI groups. 
+### 3.3.3 Modules
+Between the sensory modules, aBMI module 2 trended towards increased clustering coefficient compared to the vhBMI module 4 (t-ratio=2.23 , SE= 0.02, pFDR= 0.09). The aBMI group additionally showed increased clustering coefficients within the subcortical module (module 5) compared to the vhBMI subcortical module (module 6) (t-ratio= 2.79, SE= 0.02, pFDR= 0.03).
+
+## 3.4 Participation coefficient
+### 3.4.1 Nodal
+No differences between groups by nodal participation coefficient were observed. 
+### 3.4.2 Functional Networks
+Within the auditory functional network the vhBMI group showed increased participation coefficient compared to both the aBMI (t-ratio= -2.52, SE= 1.16, pFDR= 0.02) and the hBMI groups (t-ratio= -2.54, SE= 1.16, pFDR= 0.02). Similarly, in the frontoparietal network, the hBMI group had higher participation coefficient compared to both the aBMI (t-ratio= -2.56, SE= 0.47, pFDR= 0.03) and vhBMI (t-ratio= 2.30, SE= 0.47, pFDR= 0.04) groups. The participation coefficient in the somatosensory hand network for the vhBMI was higher compared to the aBMI (t-ratio= -3.78, SE= 0.58, pFDR= 0.0005) and the hBMI (t-ratio=-3.64 , SE= 0.58, pFDR= 0.0005) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a higher participation coefficient compared to the aBMI group (t-ratio= -2.88, SE= 0.82, pFDR= 0.006) and the hBMI (t-ratio= -2.90, SE= 0.82, pFDR= 0.006) group.  
+### 3.4.3 Module
+Within the visual modules, the vhBMI showed lower participation coefficients compared to both the aBMI (t-ratio= 4.80, SE= 0.28, pFDR= 0.0003) and the hBMI groups (t-ratio= 4.37, SE= 0.28, pFDR= 0.0004). Conversely, the participation coefficient for the vhBMI was higher in the sensory module (module 4) compared to the aBMI (module 2) (t-ratio=-8.54 , SE= 0.27 pFDR< 0.0001 ) and hBMI (module 2) (t-ratio= -8.17, SE= 0.27, pFDR< 0.0001).  
+
+## 3.6 Betweenness centrality
+### 3.6.1 Nodal
+No differences were detected between BMI groups after correcting for multiple comparisons (n=300, p uncorrected < 0.0002). Using the less stringent multiple comparison (n=3, p uncorrected < 0.01; pFDR < 0.05) differences were observed between aBMI and hBMI  in node 25 (t-ratio= -2.31, SE= 0.0003, pFDR= 0.03), 
+When comparing hBMI and vBMI differences were observed in node 25 (t-ratio= 2.36, SE= 0.0003, pFDR= 0.03), 
+### 3.6.2 Functional Networks
+No differences in any functional networks were seen between the BMI groups.
+### 3.6.3 Module 
+The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (t-ratio= 3.21, SE= 0.001, pFDR= 0.006). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (t-ratio= 3.24, SE= 0.001, pFDR= 0.006). 
+
+
+# Post hoc analysis of behavioral measures
+## Data prep
+```{r}
+interest <-c("Subject","DDisc_SV_1mo_200","DDisc_SV_6mo_200","DDisc_SV_1yr_200","DDisc_SV_3yr_200","DDisc_SV_5yr_200",
+             "DDisc_SV_10yr_200","DDisc_SV_1mo_40K","DDisc_SV_6mo_40K","DDisc_SV_1yr_40K","DDisc_SV_3yr_40K","DDisc_SV_5yr_40K",
+             "DDisc_SV_10yr_40K","DDisc_AUC_200","DDisc_AUC_40K","ListSort_AgeAdj","CogFluidComp_Unadj","CogFluidComp_AgeAdj",
+             "CogEarlyComp_Unadj","CogEarlyComp_AgeAdj",
+             "CogTotalComp_Unadj","CogTotalComp_AgeAdj","CogCrystalComp_Unadj","CogCrystalComp_AgeAdj",
+             "Endurance_Unadj","Endurance_AgeAdj",
+             "GaitSpeed_Comp","Dexterity_Unadj","Dexterity_AgeAdj","Strength_Unadj","Strength_AgeAdj",
+             "Noise_Comp","Odor_Unadj","Odor_AgeAdj","PainIntens_RawScore","PainInterf_Tscore",
+             "Taste_Unadj","Taste_AgeAdj")
+
+unres<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/unrestricted_gshearrer_4_19_2018_11_31_37.csv", header=T, sep=",")
+x<-unres[interest]
+x$Subject<-x$Subject
+head(x)
+
+data1<-join(area_df2,x)
+dim(data1)
+colnames(data1)
+```
+
+```{r}
+# mod
+data1$module<-as.factor(data1$module)
+summary(data1$module)
+module_df<-subset(data1, data1$module != 7)
+module_df<-subset(module_df, module_df$module != 8)
+module_df$module <- factor(module_df$module)
+summary(module_df$module)
+```
+## Function 
+```{r}
+fit_function<-function(x,y,z,data){
+  x<-unlist(x)
+  y <- unlist(y)
+  z<-unlist(z)
+  fit<-lm(y~z+x+Age_c+race_eth+Gender, data=data, na.action = na.omit)#
+  return(fit)
+}
+```
+## By funtional network 
+### Participation coeff
+#### auditory
+```{r}
+# View(module_df)
+warp_1 <- transform(module_df, mods = interaction(group, area))
+summary(warp_1$mods)
+warp_1$PC_z<-scale(warp_1$PC)
+warp_1<-subset(warp_1, warp_1$PC_z > -3)
+
+warp_1$auditory <- NA
+warp_1[warp_1$mods == 'no.Auditory', "auditory"] <- 'aBMIauditory'
+warp_1[warp_1$mods == 'ov.Auditory', "auditory"] <- 'hBMIauditory'
+warp_1[warp_1$mods == 'ob.Auditory', "auditory"] <- 'vhBMIauditory'
+colnames(warp_1)
+```
+```{r}
+summary(as.factor(warp_1$mods))
+```
+
+```{r}
+# y is behavioral measure
+# x is the group
+# z is the graph measures
+names<-colnames(warp_ph[31:64])
+
+l <- list()
+for (i in seq(31, 64, by= 1)){
+  print(paste("start", i))
+  out<-fit_function(x=warp_1[68], y = warp_1[i], z=warp_1[67], data = warp_1)
+  test.emm <- emmeans(out, "x")
+  df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
+  l[[i]] <-list(out,df)
+}
+
+l2<-list()
+for(i in seq(1, 33, by = 1)){
+  print(paste ("this is ",i))
+  df<-l[31:64][[i]][[2]]
+  df$var<-names[i]
+  l2[[i]] <-list(df)
+  }
+df_PCviz<-bind_rows(l2)
+df_PCviz$pFDR<-p.adjust(df_PCviz$p.value, method = "BH")
+df_PCviz[df_PCviz$p.value <= 0.05, ] 
+```
+* frontoparietal
+* somatosensory hand
+* somatosensory mouth 
+
+## By module
+### Clustering coeff
+* module 4
+* module 5
+
+### Participation coeff
+#### visual
+```{r}
+warp_ph <- transform(module_df, mods = interaction(group, module))
+warp_ph$PC_z<-scale(warp_ph$PC)
+warp_ph<-subset(warp_ph, warp_ph$PC_z > -3)
+
+warp_ph$visual <- NA
+warp_ph[warp_ph$mods == 'no.0', "visual"] <- 'aBMI0'
+warp_ph[warp_ph$mods == 'ov.0', "visual"] <- 'hBMI0'
+warp_ph[warp_ph$mods == 'ob.0', "visual"] <- 'vhBMI0'
+colnames(warp_ph)
+```
+
+```{r}
+# y is behavioral measure
+# x is the group
+# z is the graph measures
+names<-colnames(warp_ph[31:63])
+
+l <- list()
+for (i in seq(31, 63, by= 1)){
+  print(paste("start", i))
+  out<-fit_function(x=warp_ph[67], y = warp_ph[i], z=warp_ph[66], data = warp_ph)
+  test.emm <- emmeans(out, "x")
+  df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
+  l[[i]] <-list(out,df)
+}
+
+l2<-list()
+for(i in seq(1, 33, by = 1)){
+  print(paste ("this is ",i))
+  df<-l[31:63][[i]][[2]]
+  df$var<-names[i]
+  l2[[i]] <-list(df)
+  }
+df_PCviz<-bind_rows(l2)
+df_PCviz$pFDR<-p.adjust(df_PCviz$p.value, method = "BH")
+df_PCviz[df_PCviz$p.value <= 0.05, ] 
+```
+
+#### Sensory 
+```{r}
+warp_ph <- transform(module_df, mods = interaction(group, module))
+warp_ph$PC_z<-scale(warp_ph$PC)
+warp_ph<-subset(warp_ph, warp_ph$PC_z > -3)
+
+warp_ph$sensory <- NA
+warp_ph[warp_ph$mods == 'no.2', "sensory"] <- 'aBMI2'
+warp_ph[warp_ph$mods == 'ov.2', "sensory"] <- 'hBMI2'
+warp_ph[warp_ph$mods == 'ob.4', "sensory"] <- 'vhBMI4'
+colnames(warp_ph)
+```
+
+```{r}
+# y is behavioral measure
+# x is the group
+# z is the graph measures
+names<-colnames(warp_ph[31:63])
+
+l <- list()
+for (i in seq(31, 63, by= 1)){
+  print(paste("start", i))
+  out<-fit_function(x=warp_ph[67], y = warp_ph[i], z=warp_ph[66], data = warp_ph)
+  test.emm <- emmeans(out, "x")
+  df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
+  l[[i]] <-list(out,df)
+}
+
+l2<-list()
+for(i in seq(1, 33, by = 1)){
+  print(paste ("this is ",i))
+  df<-l[31:63][[i]][[2]]
+  df$var<-names[i]
+  l2[[i]] <-list(df)
+  }
+df_PCsen<-bind_rows(l2)
+df_PCsen$pFDR<-p.adjust(df_PCsen$p.value, method = "BH")
+df_PCsen[df_PCsen$p.value <= 0.05, ] 
+```
+### Betweennness centrality 
+#### visual 
+```{r}
+warp_ph$visual <- NA
+warp_ph[warp_ph$mods == 'no.0', "visual"] <- 'aBMI0'
+warp_ph[warp_ph$mods == 'ov.0', "visual"] <- 'hBMI0'
+warp_ph[warp_ph$mods == 'ob.0', "visual"] <- 'vhBMI0'
+
+X_gls <- gls(PC_z~visual+Taste_AgeAdj+Age_c+HBA1c_c+Gender+race_eth, data = warp_ph, na.action = na.omit)
+X_emm <- emmeans(X_gls, "visual")
+contrast(X_emm, "pairwise",  adjust = "fdr")
+
+X_gls <- gls(PC_z~visual+DDisc_SV_1mo_200+Age_c+HBA1c_c+Gender+race_eth, data = warp_ph, na.action = na.omit)
+X_emm <- emmeans(X_gls, "visual")
+contrast(X_emm, "pairwise",  adjust = "fdr")
+
+X_gls <- gls(PC_z~visual+DDisc_SV_6mo_200+Age_c+HBA1c_c+Gender+race_eth, data = warp_ph, na.action = na.omit)
+X_emm <- emmeans(X_gls, "visual")
+contrast(X_emm, "pairwise",  adjust = "fdr")
+
+X_gls <- gls(PC_z~visual+ListSort_AgeAdj+Age_c+HBA1c_c+Gender+race_eth, data = warp_ph, na.action = na.omit)
+X_emm <- emmeans(X_gls, "visual")
+contrast(X_emm, "pairwise",  adjust = "fdr")
+
+X_gls <- gls(PC_z~visual+CogFluidComp_AgeAdj+Age_c+HBA1c_c+Gender+race_eth, data = warp_ph, na.action = na.omit)
+X_emm <- emmeans(X_gls, "visual")
+contrast(X_emm, "pairwise",  adjust = "fdr")
+
+X_gls <- gls(PC_z~visual+CogCrystalComp_AgeAdj+Age_c+HBA1c_c+Gender+race_eth, data = warp_ph, na.action = na.omit)
+X_emm <- emmeans(X_gls, "visual")
+contrast(X_emm, "pairwise",  adjust = "fdr")
+```
+
+"DDisc_SV_1mo_200"      "DDisc_SV_6mo_200"      "DDisc_SV_1yr_200"      "DDisc_SV_3yr_200"     
+[31] "DDisc_SV_5yr_200"      "DDisc_SV_10yr_200"     "DDisc_SV_1mo_40K"      "DDisc_SV_6mo_40K"      "DDisc_SV_1yr_40K"     
+[36] "DDisc_SV_3yr_40K"      "DDisc_SV_5yr_40K"      "DDisc_SV_10yr_40K"     "DDisc_AUC_200"         "DDisc_AUC_40K"        
+[41] "ListSort_AgeAdj"       "CogFluidComp_Unadj"    "CogFluidComp_AgeAdj"   "CogEarlyComp_Unadj"    "CogEarlyComp_AgeAdj"  
+[46] "CogTotalComp_Unadj"    "CogTotalComp_AgeAdj"   "CogCrystalComp_Unadj"  "CogCrystalComp_AgeAdj" "Endurance_Unadj"      
+[51] "Endurance_AgeAdj"      "GaitSpeed_Comp"        "Dexterity_Unadj"       "Dexterity_AgeAdj"      "Strength_Unadj"       
+[56] "Strength_AgeAdj"       "Noise_Comp"            "Odor_Unadj"            "Odor_AgeAdj"           "PainIntens_RawScore"  
+[61] "PainInterf_Tscore"     "Taste_Unadj"           "Taste_AgeAdj"
 
