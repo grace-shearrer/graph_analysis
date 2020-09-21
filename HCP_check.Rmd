@@ -758,36 +758,34 @@ df_PCmouth[df_PCmouth$p.value <= 0.05, ]
 ### Participation coeff
 #### visual
 ```{r}
-warp_ph <- transform(module_df, mods = interaction(group, module))
-warp_ph$PC_z<-scale(warp_ph$PC_log)
-warp_ph<-subset(warp_ph, warp_ph$PC_z > -3)
+warp_2 <- transform(module_df, mods = interaction(group, module))
 
-warp_ph$visual <- NA
-warp_ph[warp_ph$mods == 'no.0', "visual"] <- 'aBMI0'
-warp_ph[warp_ph$mods == 'ov.0', "visual"] <- 'hBMI0'
-warp_ph[warp_ph$mods == 'ob.0', "visual"] <- 'vhBMI0'
-colnames(warp_ph)
+warp_2$visual <- NA
+warp_2[warp_2$mods == 'no.0', "visual"] <- 'aBMI0'
+warp_2[warp_2$mods == 'ov.0', "visual"] <- 'hBMI0'
+warp_2[warp_2$mods == 'ob.0', "visual"] <- 'vhBMI0'
+colnames(warp_2)
 ```
 
 ```{r}
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_ph[31:63])
+names<-colnames(warp_2[28:65])
 
 l <- list()
-for (i in seq(31, 63, by= 1)){
+for (i in seq(28, 65, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_ph[67], y = warp_ph[i], z=warp_ph[66], data = warp_ph)
+  out<-fit_function(x=warp_2[69], y = warp_2[i], z=warp_2[65], data = warp_2)
   test.emm <- emmeans(out, "x")
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   l[[i]] <-list(out,df)
 }
 
 l2<-list()
-for(i in seq(1, 33, by = 1)){
+for(i in seq(1, 37, by = 1)){
   print(paste ("this is ",i))
-  df<-l[31:63][[i]][[2]]
+  df<-l[28:65][[i]][[2]]
   df$var<-names[i]
   l2[[i]] <-list(df)
   }
@@ -798,42 +796,40 @@ df_PCviz[df_PCviz$p.value <= 0.05, ]
 
 #### Sensory 
 ```{r}
-warp_ph <- transform(module_df, mods = interaction(group, module))
-warp_ph$PC_z<-scale(warp_ph$PC)
-warp_ph<-subset(warp_ph, warp_ph$PC_z > -3)
+warp_2 <- transform(module_df, mods = interaction(group, module))
 
-warp_ph$sensory <- NA
-warp_ph[warp_ph$mods == 'no.2', "sensory"] <- 'aBMI2'
-warp_ph[warp_ph$mods == 'ov.2', "sensory"] <- 'hBMI2'
-warp_ph[warp_ph$mods == 'ob.4', "sensory"] <- 'vhBMI4'
-colnames(warp_ph)
+warp_2$sensory <- NA
+warp_2[warp_2$mods == 'no.2', "sensory"] <- 'aBMI2'
+warp_2[warp_2$mods == 'ov.2', "sensory"] <- 'hBMI2'
+warp_2[warp_2$mods == 'ob.4', "sensory"] <- 'vhBMI4'
+colnames(warp_2)
 ```
 
 ```{r}
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_ph[31:63])
+names<-colnames(warp_2[28:65])
 
 l <- list()
-for (i in seq(31, 63, by= 1)){
+for (i in seq(28, 65, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_ph[67], y = warp_ph[i], z=warp_ph[66], data = warp_ph)
+  out<-fit_function(x=warp_2[69], y = warp_2[i], z=warp_2[65], data = warp_2)
   test.emm <- emmeans(out, "x")
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   l[[i]] <-list(out,df)
 }
 
 l2<-list()
-for(i in seq(1, 33, by = 1)){
+for(i in seq(1, 37, by = 1)){
   print(paste ("this is ",i))
-  df<-l[31:63][[i]][[2]]
+  df<-l[28:65][[i]][[2]]
   df$var<-names[i]
   l2[[i]] <-list(df)
   }
 df_PCsen<-bind_rows(l2)
 df_PCsen$pFDR<-p.adjust(df_PCsen$p.value, method = "BH")
-df_PCsen[df_PCsen$p.value <= 0.05, ] 
+df_PCsen[df_PCsen$pFDR <= 0.05, ] 
 ```
 ### Betweennness centrality 
 #### visual 
