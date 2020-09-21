@@ -56,7 +56,7 @@ for group, data in subedge_dict.items():
         tmp['subject'] = sub
         tmp['group'] = group
         tmp['IC'] = tmp.index
-        tmp['IC']=tmp['IC']+1
+        tmp['IC'] = 'IC_' + tmp['IC'].astype(str)
         _dfs.append(tmp)
 total = pd.concat(_dfs)
 latest_file=an.find_latest(os.path.join(basepath,'tmp'),'demo*')
