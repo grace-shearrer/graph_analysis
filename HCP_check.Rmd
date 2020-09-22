@@ -86,13 +86,9 @@ dat_check$race_eth <- ordered(dat_check$race_eth, levels = c("White", "Black or 
 unres<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/unrestricted_gshearrer_4_19_2018_11_31_37.csv", header=T, sep=",")
 myvars<-c("Subject","Gender","DDisc_SV_1mo_200","DDisc_SV_6mo_200","DDisc_SV_1yr_200","DDisc_SV_3yr_200","DDisc_SV_5yr_200",
              "DDisc_SV_10yr_200","DDisc_SV_1mo_40K","DDisc_SV_6mo_40K","DDisc_SV_1yr_40K","DDisc_SV_3yr_40K","DDisc_SV_5yr_40K",
-             "DDisc_SV_10yr_40K","DDisc_AUC_200","DDisc_AUC_40K","ListSort_AgeAdj","CogFluidComp_Unadj","CogFluidComp_AgeAdj",
-             "CogEarlyComp_Unadj","CogEarlyComp_AgeAdj",
-             "CogTotalComp_Unadj","CogTotalComp_AgeAdj","CogCrystalComp_Unadj","CogCrystalComp_AgeAdj",
-             "Endurance_Unadj","Endurance_AgeAdj",
-             "GaitSpeed_Comp","Dexterity_Unadj","Dexterity_AgeAdj","Strength_Unadj","Strength_AgeAdj",
-             "Noise_Comp","Odor_Unadj","Odor_AgeAdj","PainIntens_RawScore","PainInterf_Tscore",
-             "Taste_Unadj","Taste_AgeAdj")
+             "DDisc_SV_10yr_40K","DDisc_AUC_200","DDisc_AUC_40K","ListSort_AgeAdj","CogFluidComp_AgeAdj","CogEarlyComp_AgeAdj",
+             "CogTotalComp_AgeAdj","CogCrystalComp_AgeAdj","Endurance_AgeAdj",
+             "GaitSpeed_Comp","Dexterity_AgeAdj","Strength_AgeAdj","Taste_AgeAdj")
 unres<-unres[myvars]
 unres$Subject<-unres$Subject
 ```
@@ -656,26 +652,23 @@ warp_1[warp_1$mods == 'ob.Auditory', "auditory"] <- 'vhBMIauditory'
 colnames(warp_1)
 ```
 
-
-
-
 ```{r}
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_1[28:64])
+names<-colnames(warp_1[28:52])
 
 aud <- list()
-for (i in seq(28, 64, by= 1)){
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[70], y = warp_1[i], z=warp_1[66], data = warp_1)
+  out<-fit_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   aud[[i]] <-list(out,df, test.emm)
 }
 
 aud2<-list()
-for(i in seq(1, 36, by = 1)){
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
   df<-aud[28:64][[i]][[2]]
   df$var<-names[i]
@@ -684,7 +677,8 @@ for(i in seq(1, 36, by = 1)){
 
 df_PCaud<-bind_rows(aud2)
 df_PCaud$pFDR<-p.adjust(df_PCaud$p.value, method = "BH")
-df_PCaud[df_PCaud$pFDR <= 0.05, ] 
+PC_auditory<-df_PCaud[df_PCaud$pFDR <= 0.05, ] 
+PC_auditory
 ```
 
 
@@ -692,11 +686,11 @@ df_PCaud[df_PCaud$pFDR <= 0.05, ]
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
-head(warp_1)
 warp_1$Smhand <- NA
 warp_1[warp_1$mods == 'no.Smhand', "Smhand"] <- 'aBMISmhand'
 warp_1[warp_1$mods == 'ovSmhand', "Smhand"] <- 'hBMISmhand'
 warp_1[warp_1$mods == 'ob.Smhand', "Smhand"] <- 'vhBMISmhand'
+colnames(warp_1)
 ```
 
 
@@ -704,27 +698,28 @@ warp_1[warp_1$mods == 'ob.Smhand', "Smhand"] <- 'vhBMISmhand'
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_1[28:64])
+names<-colnames(warp_1[28:52])
 
-l <- list()
-for (i in seq(28, 64, by= 1)){
+smhand <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[69], y = warp_1[i], z=warp_1[65], data = warp_1)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  smhand[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 36, by = 1)){
+smhand2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:64][[i]][[2]]
+  df<-smhand[28:64][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  smhand2[[i]] <-list(df)
   }
-df_PChand<-bind_rows(l2)
+df_PChand<-bind_rows(smhand2)
 df_PChand$pFDR<-p.adjust(df_PChand$p.value, method = "BH")
-df_PChand[df_PChand$p.value <= 0.05, ] 
+PC_hand<-df_PChand[df_PChand$pFDR <= 0.05, ] 
+PC_hand
 ```
 #### somatosensory mouth 
 ```{r}
@@ -743,27 +738,28 @@ colnames(warp_1)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_1[28:65])
+names<-colnames(warp_1[28:52])
 
-l <- list()
-for (i in seq(31, 65, by= 1)){
+smmouth <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[69], y = warp_1[i], z=warp_1[65], data = warp_1)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  smmouth[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 37, by = 1)){
+smmouth2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:65][[i]][[2]]
+  df<-smmouth[28:64][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  smmouth2[[i]] <-list(df)
   }
-df_PCmouth<-bind_rows(l2)
+df_PCmouth<-bind_rows(smmouth2)
 df_PCmouth$pFDR<-p.adjust(df_PCmouth$p.value, method = "BH")
-df_PCmouth[df_PCmouth$p.value <= 0.05, ] 
+PC_mouth<-df_PCmouth[df_PCmouth$pFDR <= 0.05, ] 
+PC_mouth
 ```
 
 ### Participation coeff
@@ -782,27 +778,29 @@ colnames(warp_2)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_2[28:65])
+names<-colnames(warp_2[28:52])
 
-l <- list()
-for (i in seq(28, 65, by= 1)){
+visualmod <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_2[69], y = warp_2[i], z=warp_2[65], data = warp_2)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  visualmod[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 37, by = 1)){
+visualmod2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:65][[i]][[2]]
+  df<-visualmod[28:64][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  visualmod2[[i]] <-list(df)
   }
-df_PCviz<-bind_rows(l2)
+
+df_PCviz<-bind_rows(visualmod2)
 df_PCviz$pFDR<-p.adjust(df_PCviz$p.value, method = "BH")
-df_PCviz[df_PCviz$p.value <= 0.05, ] 
+PC_visualmod<-df_PCviz[df_PCviz$pFDR <= 0.05, ] 
+PC_visualmod
 ```
 
 #### Sensory 
@@ -820,27 +818,28 @@ colnames(warp_2)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_2[28:65])
+names<-colnames(warp_2[28:52])
 
-l <- list()
-for (i in seq(28, 65, by= 1)){
+sensorymod <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_2[69], y = warp_2[i], z=warp_2[65], data = warp_2)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  sensorymod[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 37, by = 1)){
+sensorymod2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:65][[i]][[2]]
+  df<-sensorymod[28:64][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  sensorymod2[[i]] <-list(df)
   }
-df_PCsen<-bind_rows(l2)
+df_PCsen<-bind_rows(sensorymod2)
 df_PCsen$pFDR<-p.adjust(df_PCsen$p.value, method = "BH")
-df_PCsen[df_PCsen$pFDR <= 0.05, ] 
+PC_sensorymod<-df_PCsen[df_PCsen$pFDR <= 0.05, ] 
+PC_sensorymod
 ```
 ### Betweennness centrality 
 #### visual
@@ -858,27 +857,28 @@ colnames(warp_3)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_3[28:65])
+names<-colnames(warp_3[28:52])
 
-l <- list()
-for (i in seq(28, 65, by= 1)){
+visualmod <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_3[69], y = warp_3[i], z=warp_3[66], data = warp_3)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_3[56], y = warp_3[i], z=warp_3[53], data = warp_3)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  visualmod[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 37, by = 1)){
+visualmod2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:65][[i]][[2]]
+  df<-visualmod[28:52][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  visualmod2[[i]] <-list(df)
   }
-df_Cenviz<-bind_rows(l2)
+df_Cenviz<-bind_rows(visualmod2)
 df_Cenviz$pFDR<-p.adjust(df_Cenviz$p.value, method = "BH")
-df_Cenviz[df_Cenviz$pFDR <= 0.05, ] 
+CEN_visualmod<-df_Cenviz[df_Cenviz$pFDR <= 0.05, ] 
+CEN_visualmod
 ```
 ## Clustering coefficient 
 #### Sensory 
@@ -889,36 +889,36 @@ warp_X$sensory <- NA
 warp_X[warp_X$mods == "no.2", "sensory"] <- 'aBMI2'
 warp_X[warp_X$mods == "ov.2", "sensory"] <- 'hBMI2'
 warp_X[warp_X$mods == "ob.4", "sensory"] <- 'vhBMI4'
-colnames(warp_X)
 warp_X$sensory<-as.factor(warp_X$sensory)
-summary(as.factor(warp_X$sensory))
+colnames(warp_X)
 ```
 
 ```{r}
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_X[28:65])
+names<-colnames(warp_X[28:52])
 
-l <- list()
-for (i in seq(28, 65, by= 1)){
+sensorymod <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_X[69], y = warp_X[i], z=warp_X[19], data = warp_X)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  sensorymod[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 37, by = 1)){
+sensorymod2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:65][[i]][[2]]
+  df<-sensorymod[28:52][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  sensorymod2[[i]] <-list(df)
   }
-df_CCsen<-bind_rows(l2)
+df_CCsen<-bind_rows(sensorymod2)
 df_CCsen$pFDR<-p.adjust(df_CCsen$p.value, method = "BH")
-df_CCsen[df_CCsen$pFDR <= 0.05, ] 
+CC_sensory<-df_CCsen[df_CCsen$pFDR <= 0.05, ] 
+CC_sensory
 ```
 warp_mod[warp_mod$mods == 'normal.5', "subcort"] <- 'aBMI5'
 warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
@@ -940,25 +940,114 @@ warp_X$subcortical<-as.factor(warp_X$subcortical)
 # y is behavioral measure
 # x is the group
 # z is the graph measures
-names<-colnames(warp_X[28:65])
+names<-colnames(warp_X[28:52])
 
-l <- list()
-for (i in seq(28, 65, by= 1)){
+subcorticalmod <- list()
+for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_X[69], y = warp_X[i], z=warp_X[19], data = warp_X)
-  test.emm <- emmeans(out, "x")
+  out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
+  test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  l[[i]] <-list(out,df)
+  subcorticalmod[[i]] <-list(out,df, test.emm)
 }
 
-l2<-list()
-for(i in seq(1, 37, by = 1)){
+subcorticalmod2<-list()
+for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-l[28:65][[i]][[2]]
+  df<-subcorticalmod[28:52][[i]][[2]]
   df$var<-names[i]
-  l2[[i]] <-list(df)
+  subcorticalmod2[[i]] <-list(df)
   }
-df_CCsub<-bind_rows(l2)
+df_CCsub<-bind_rows(subcorticalmod2)
 df_CCsub$pFDR<-p.adjust(df_CCsub$p.value, method = "BH")
-df_CCsub[df_CCsub$pFDR <= 0.05, ] 
+CC_subcortical<-df_CCsub[df_CCsub$pFDR <= 0.05, ] 
+CC_subcortical
 ```
+
+###  Combine the tables
+Keep the contrast, t-ratio, SE, var, pFDR, metric, area
+Round to 2 decimal places
+Add area and type 
+```{r}
+df_func<-function(df, m, a){
+  keep<-c("metric","area","Contrast","Var","t.ratio","SE","pFDR")
+  round2<-c("SE","t.ratio")
+  round3<-c("pFDR")
+  df$metric<-sprintf("%s", m)
+  df$area<- sprintf("%s", a)
+  df[round2]<-round(df[round2], 2)
+  df[round3]<-round(df[round3], 3)
+  
+  df$contrast<-gsub('[[:digit:]]+', '', df$contrast)
+  df$Contrast<-NA
+  df[df$contrast == "aBMI,. - hBMI,.", "Contrast"] <- 'aBMI vs. hBMI'
+  df[df$contrast == "aBMI,. - vhBMI,.", "Contrast"] <- 'aBMI vs. vhBMI'
+  df[df$contrast == "hBMI,. - vhBMI,.", "Contrast"] <- 'hBMI vs. vhBMI'
+  
+  df[df$contrast == "aBMISmhand,. - hBMISmhand,.", "Contrast"] <- 'aBMI vs. hBMI'
+  df[df$contrast == "aBMISmhand,. - vhBMISmhand,.", "Contrast"] <- 'aBMI vs. vhBMI'
+  df[df$contrast == "hBMISmhand,. - vhBMISmhand,.", "Contrast"] <- 'hBMI vs. vhBMI'
+  
+  df[df$contrast == "aBMISmmouth,. - hBMISmmouth,.", "Contrast"] <- 'aBMI vs. hBMI'
+  df[df$contrast == "aBMISmmouth,. - vhBMISmmouth,.", "Contrast"] <- 'aBMI vs. vhBMI'
+  df[df$contrast == "hBMISmmouth,. - vhBMISmmouth,.", "Contrast"] <- 'hBMI vs. vhBMI'
+  
+  df[df$contrast == "aBMIauditory,. - hBMIauditory,.", "Contrast"] <- 'aBMI vs. hBMI'
+  df[df$contrast == "aBMIauditory,. - vhBMIauditory,.", "Contrast"] <- 'aBMI vs. vhBMI'
+  df[df$contrast == "hBMIauditory,. - vhBMIauditory,.", "Contrast"] <- 'hBMI vs. vhBMI'
+  
+  df$Var<-NA
+  df[df$var == "CogCrystalComp_AgeAdj", "Var"] <- 'Crystallized Cognition Composite score'
+  df[df$var == "CogEarlyComp_AgeAdj", "Var"] <- 'Early Childhood Composite score'
+  df[df$var == "CogFluidComp_AgeAdj", "Var"] <- 'Fluid Cognition Composite score'
+  df[df$var == "CogTotalComp_AgeAdj", "Var"] <- 'Cognitive Function Composite score'
+  df[df$var == "DDisc_AUC_200", "Var"] <- 'Delay Discounting: Area Under the Curve (AUC) for Discounting of $200'
+  df[df$var == "DDisc_AUC_40K", "Var"] <- 'Delay Discounting: Area Under the Curve (AUC) for Discounting of $40,000'
+  df[df$var == "DDisc_SV_10yr_200", "Var"] <- 'Delay Discounting: Subjective Value for $200 at 10 years'
+  df[df$var == "DDisc_SV_10yr_40K", "Var"] <- 'Delay Discounting: Subjective Value for $40,000 at 10 years'
+  df[df$var == "DDisc_SV_1mo_200", "Var"] <- 'Delay Discounting: Subjective Value for $200 at 1 month'
+  df[df$var == "DDisc_SV_1mo_40K", "Var"] <- 'Delay Discounting: Subjective Value for $40,000 at 1 month'
+  df[df$var == "DDisc_SV_1yr_200", "Var"] <- 'Delay Discounting: Subjective Value for $200 at 1 year'
+  df[df$var == "DDisc_SV_1yr_40K", "Var"] <- 'Delay Discounting: Subjective Value for $40,000 at 1 year'
+  df[df$var == "DDisc_SV_3yr_200", "Var"] <- 'Delay Discounting: Subjective Value for $200 at 3 year'
+  df[df$var == "DDisc_SV_3yr_40K", "Var"] <- 'Delay Discounting: Subjective Value for $40,000 at 3 year'
+  df[df$var == "DDisc_SV_5yr_200", "Var"] <- 'Delay Discounting: Subjective Value for $200 at 5 year'
+  df[df$var == "DDisc_SV_5yr_40K", "Var"] <- 'Delay Discounting: Subjective Value for $40,000 at 5 year'
+  df[df$var == "DDisc_SV_6mo_200", "Var"] <- 'Delay Discounting: Subjective Value for $200 at 6 months'
+  df[df$var == "DDisc_SV_6mo_40K", "Var"] <- 'Delay Discounting: Subjective Value for $40,000 at 6 months'
+  df[df$var == "Dexterity_AgeAdj", "Var"] <- 'Dexterity'
+  df[df$var == "Endurance_AgeAdj", "Var"] <- 'Endurance'
+  df[df$var == "GaitSpeed_Comp", "Var"] <- 'Gait Speed'
+  df[df$var == "ListSort_AgeAdj", "Var"] <- 'Working Memory (List Sorting)'
+  df[df$var == "Strength_AgeAdj", "Var"] <- 'Strength'
+  df[df$var == "Taste_AgeAdj", "Var"] <- 'Taste sensitivity'
+  df<-df[keep]
+  return(df)
+}
+```
+
+```{r}
+PC_auditory
+```
+
+
+```{r}
+CC_sensory2<-df_func(df = CC_sensory, m = "clustering coefficient", a = "sensory module")
+PC_auditory2<-df_func(df = PC_auditory, m = "participation coefficient", a ="auditory functional network")
+PC_hand2<-df_func(df = PC_hand, m = "participation coefficient", a = "somatosensory hand functional network")
+PC_mouth2<-df_func(df = PC_mouth, m = "participation coefficient",  a = "somatosensory mouth functional network")
+CEN_visualmod2<-df_func(df = CEN_visualmod, m = "betweenness centrality", a = "visual module")
+CC_subcortical2<-df_func(df = CC_subcortical, m = "clustering coefficient", a = "subcortical module")
+```
+
+
+
+```{r}
+all_df<-rbind(CC_subcortical2, CC_sensory2, PC_auditory2, PC_hand2, PC_mouth2, CEN_visualmod2)
+colz<-c("Metric","Area", "Contrast", "Behavioral variable", "t-ratio","SE","pFDR")
+colnames(all_df)<-colz
+all_df$`Behavioral variable`<-as.factor(all_df$`Behavioral variable`)
+all_df
+```
+
+
