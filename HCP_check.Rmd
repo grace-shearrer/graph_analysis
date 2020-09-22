@@ -403,6 +403,10 @@ Cen.fac <- update(Cen.emm, levels = list(
                          "91","92","93","94","95","96","97","98","99")))
 
 contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
+eff_size(pigs.emm.s, sigma = sigma(pigs.lm), edf = 23)
+```
+
+```{r}
 #node13, node18, node41, node50, node86
 IC13<-subset(warp, warp$IC == "IC_13")
 IC13p<-violin(IC13, IC13$mods, IC13$centrality)
@@ -456,6 +460,8 @@ VizCenp
 ```
 ### Sensory 
 ```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
 warp_mod$sensory <- NA
 warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
@@ -518,10 +524,9 @@ No differences between groups by nodal participation coefficient were observed w
 
 ```{r}
 colnames(warp)
-warp$PC_z<-scale(warp$PC)
 # describeBy(warp$PC_z, warp$group)
 # warp<-subset(warp, warp$PC_z > -0.03)
-violin(d = warp, x = warp$group, y = warp$PC_z)
+
 PC.gls <- gls(PC_log ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
 PC.emm <- emmeans(PC.gls, "mods")
 PC.fac <- update(PC.emm, levels = list(
@@ -539,6 +544,8 @@ PC.fac <- update(PC.emm, levels = list(
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
 #node13, node32
+warp$PC_z<-scale(warp$PC)
+
 IC13<-subset(warp, warp$IC == "IC_13")
 IC13p<-violin(IC13, IC13$mods, IC13$PC_z)
 IC32<-subset(warp, warp$IC == "IC_32")
@@ -550,7 +557,6 @@ ggarrange(IC13p, IC32p,
 ## 3.4.2 Functional Networks
 Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (t-ratio= 2.15, SE= 0.18, pFDR= 0.05) and the hBMI groups (t-ratio= 2.17, SE= 0.18, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (t-ratio= 3.40, SE= 0.09, pFDR= 0.002) and the hBMI (t-ratio=3.30 , SE= 0.09, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (t-ratio= 2.60, SE= 0.13, pFDR= 0.01) and the hBMI (t-ratio= 2.61, SE= 0.13, pFDR= 0.01) group.  
 ```{r}
-warp_func$PC_z<-scale(warp_func$PC)
 # warp_func<-subset(warp_func, warp_func$PC_z > -3)
 # colnames(warp_func)
 PC.gls <- gls(PC_sq ~ mods, data = warp_func, na.action = na.omit)
@@ -562,10 +568,11 @@ PC.fac <- update(PC.emm, levels = list(
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
-
-warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
+PC.fac
+eff_size(PC.emm, sigma = sigma(PC.gls), edf = 246)
 
 #node13, node32
+warp_func$PC_z<-scale(warp_func$PC)
 
 aud<-subset(warp_func, warp_func$area == "Auditory")
 aud<-aud[complete.cases(aud$area), ] 
@@ -574,6 +581,7 @@ describeBy(aud$PC, aud$mods)
 
 smH<-subset(warp_func, warp_func$area ==  "Smhand")
 smH$mods<-factor(smH$mods)
+head(smH)
 smHp<-violin(smH, smH$mods, smH$PC_z)
 smHp
 
@@ -590,8 +598,6 @@ Within the visual modules, the vhBMI showed lower participation coefficients com
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
 
-warp_mod$PC_z<-scale(warp_mod$PC)
-# warp_mod<-subset(warp_mod, warp_mod$PC_z > -3)
 
 head(warp_mod)
 warp_mod$visual <- NA
@@ -603,6 +609,8 @@ PC0.gls <- gls(PC_sq ~ visual, data = warp_mod, na.action = na.omit)
 PC0.emm <- emmeans(PC0.gls, "visual")
 
 contrast(PC0.emm, "pairwise",  adjust = "fdr")
+
+warp_mod$PC_z<-scale(warp_mod$PC)
 
 warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
 VizPCp<-violin(warp_mod, warp_mod$visual, warp_mod$PC_z)
@@ -828,7 +836,7 @@ for (i in seq(28, 52, by= 1)){
   out<-fit_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  smmouth[[i]] <-list(out,df, test.emm)
+  smmouth[[i]] <-list(out, df, test.emm)
 }
 
 smmouth2<-list()
@@ -842,7 +850,9 @@ df_PCmouth<-bind_rows(smmouth2)
 df_PCmouth$pFDR<-p.adjust(df_PCmouth$p.value, method = "BH")
 PC_mouth<-df_PCmouth[df_PCmouth$pFDR <= 0.05, ] 
 PC_mouth
+```
 
+```{r}
 #Taste_AgeAdj
 #ListSort_AgeAdj
 #CogTotalComp_AgeAdj
@@ -1262,4 +1272,7 @@ write.table(all_df, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/post_hoc.csv
 
 
 
+```{r}
+save.image("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/HCPcheck.RData")
+```
 

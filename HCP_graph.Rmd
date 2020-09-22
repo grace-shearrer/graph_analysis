@@ -73,6 +73,7 @@ demos$race_eth <- ordered(demos$race_eth, levels = c("White", "Black or African 
 
 
 ```
+
 ## Unresitricted data
 ```{r, echo=FALSE}
 unres<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/unrestricted_gshearrer_4_19_2018_11_31_37.csv", header=T, sep=",")
@@ -133,6 +134,7 @@ str(data[100:114])
 data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
 
 ```
+
 ```{r, echo=FALSE}
 levels(graph_df$area)
 graph_df$area<-revalue(graph_df$area, c("cerebellum"="Cerebellum"))
@@ -187,7 +189,6 @@ violin(dat,dat$group,dat$HbA1C)
 describeBy(dat$HbA1C, dat$group)
 ```
 
-
 ## sex
 ```{r, echo=FALSE}
 chisq.test(table(dat$group, dat$Gender))
@@ -220,8 +221,6 @@ dfer<-function(X,Y){
   return(df)
 }
 ```
-
-
 
 ## clustering
 ```{r}
@@ -406,6 +405,7 @@ describeBy(mouth_PPC$PC,mouth_PPC$group)
 hand_PPC<-subset(warp, warp$area == "Smhand")
 violin(hand_PPC, hand_PPC$group, hand_PPC$PC)
 ```
+
 ```{r}
 summary(graph_df$module)
 gdf<-subset(graph_df, graph_df$module != 7)
@@ -485,7 +485,7 @@ contrast(zW1.emm, "pairwise",  adjust = "fdr")
 
 violin(warp_spec, warp_spec$newvar, warp_spec$z_weight)
 ```
-```
+
 
 
 ```{r}
@@ -504,7 +504,7 @@ zW.fac <- update(zW.emm, levels = list(
                          "3.4","3.5","3.6",
                          "4.5","4.6",
                          "5.6")))
-total <- contrast(zW.fac, "pairwise", by = "area", adjust = "fdr")
+total <- contrast(zW.fac, "pairwise", by = "edge", adjust = "fdr")
 total
 ```
 ## `xtable` with HTML
@@ -668,6 +668,7 @@ all <- tibble::rownames_to_column(all, "VALUE")
 all
 drops <- c("VALUE")
 all<-all[ , !(names(all) %in% drops)]
+write.table(all, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/demo.csv", sep=",", row.names = F)
 ```
 
 ```{r}
