@@ -249,14 +249,17 @@ summary(warp_mod$module)
 head(warp_mod)
 ```
 
-# Clustering coefficient
-## By IC
+# 3.3 Clustering coefficient
+## 3.3.1 Nodal
+After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), in node 22 the aBMI group exhibited higher clustering coefficient compared to the hBMI group (t-ratio = 2.84, SE=0.02, pFDR3 = 0.01). In node 73, the aBMI group has higher clustering coefficient compared to the vhBMI group (t-ratio= 2.62, SE= 0.01, pFDR3= 0.01), and the hBMI group showed increased clustering coefficient compared the the vhBMI group (t-ratio= 3.20, SE= 0.01, pFDR3= 0.004). 
+
 ```{r}
+library(ggpubr)
 CC.gls <- gls(clustering ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
 CC.emm <- emmeans(CC.gls, "mods")
 CC.fac <- update(CC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("1","2","3","4","5","6","7","8","9","10",
+                area = c("0","1","2","3","4","5","6","7","8","9","10",
                          "11","12","13","14","15","16","17","18","19","20",
                          "21","22","23","24","25","26","27","28","29","30",
                          "31","32","33","34","35","36","37","38","39","40",
@@ -265,11 +268,20 @@ CC.fac <- update(CC.emm, levels = list(
                          "61","62","63","64","65","66","67","68","69","70",
                          "71","72","73","74","75","76","77","78","79","80",
                          "81","82","83","84","85","86","87","88","89","90",
-                         "91","92","93","94","95","96","97","98","99","100")))
+                         "91","92","93","94","95","96","97","98","99")))
 
 contrast(CC.fac, "pairwise", by = "area", adjust = "fdr")
+levels(warp$mods)
+IC22<-subset(warp, warp$IC == "IC_22")
+IC22p<-violin(IC22, IC22$mods, IC22$clustering)
+IC73<-subset(warp, warp$IC == "IC_73")
+IC73p<-violin(IC73, IC73$mods, IC73$clustering)
+ggarrange(IC22p, IC73p, 
+          labels = c("IC_22", "IC_73"),
+          ncol = 2)
 ```
-## By funtional network
+# 3.3.2 Functional Networks
+No differences in any functional networks were seen between the BMI groups. 
 ```{r}
 CC.gls <- gls(clustering ~ mods, data = warp_func)
 CC.emm <- emmeans(CC.gls, "mods")
@@ -281,7 +293,9 @@ CC.fac <- update(CC.emm, levels = list(
 
 contrast(CC.fac, "pairwise", by = "area", adjust = "fdr")
 ```
-## By module
+## 3.3.3 Modules
+Between the sensory modules, aBMI module 2 trended towards increased clustering coefficient compared to the vhBMI module 4 (t-ratio=2.23 , SE= 0.02, pFDR= 0.09). The aBMI group additionally showed increased clustering coefficients within the subcortical module (module 5) compared to the vhBMI subcortical module (module 6) (t-ratio= 2.79, SE= 0.02, pFDR= 0.03).
+
 ```{r}
 # mod
 summary(graph_df$module)
@@ -317,6 +331,9 @@ CC0.gls <- gls(clustering ~ sensory, data = warp_mod, na.action = na.omit)
 CC0.emm <- emmeans(CC0.gls, "sensory")
 
 contrast(CC0.emm, "pairwise",  adjust = "fdr")
+warp_mod<-warp_mod[complete.cases(warp_mod$sensory), ] 
+SenCCp<-violin(warp_mod, warp_mod$sensory, warp_mod$clustering)
+SenCCp
 ```
 ### DMN
 ```{r}
@@ -346,6 +363,9 @@ CC0.gls <- gls(clustering ~ subcort, data = warp_mod, na.action = na.omit)
 CC0.emm <- emmeans(CC0.gls, "subcort")
 
 contrast(CC0.emm, "pairwise",  adjust = "fdr")
+warp_mod<-warp_mod[complete.cases(warp_mod$subcort), ] 
+SubCCp<-violin(warp_mod, warp_mod$subcort, warp_mod$clustering)
+SubCCp
 ```
 ### other
 ```{r}
@@ -363,14 +383,15 @@ CC0.emm <- emmeans(CC0.gls, "other")
 contrast(CC0.emm, "pairwise",  adjust = "fdr")
 ```
 
-# Centrality 
-## By IC
+# 3.6 Betweenness centrality
+## 3.6.1 Nodal
+No differences were detected between BMI groups after correcting for multiple comparisons (n=300). Using the less stringent multiple comparison correction (n=3),  in node 13 the aBMI group had higher centrality compared to the hBMI group (t-ratio= 2.09, SE= 0.002, pFDR3= 0.05), and the vhBMI had higher centrality compared to the hBMI group (t-ratio= -2.83, SE= 0.003, pFDR3= 0.01). In node 17, the hBMI had higher centrality compared to both the aBMI (t-ratio= -2.38, SE= 0.002, pFDR3= 0.03) and vhBMI (t-ratio= 2.44, SE= 0.002, pFDR3= 0.03) groups. In node 41, the aBMI had higher centrality compared to the hBMI (t-ratio= 2.39, SE= 0.002, pFDR3= 0.02), and the vhBMI group exhibited higher centrality compared to the hBMI group (t-ratio= -3.47, SE= 0.003, pFDR3= 0.001). In node 50, the hBMI group exhibited lower centrality compared to both the aBMI (t-ratio= 2.85, SE= 0.002, pFDR3= 0.01) and the vhBMI (t-ratio= -1.94, SE= 0.003, pFDR3= 0.08) groups. In node 86, the vhBMI group exhibited decreased centrality compared to both the aBMI (t-ratio= 2.56, SE= 0.002, pFDR3= 0.02) and the hBMI (t-ratio= 3.02, SE= 0.002, pFDR3= 0.01) groups. 
 ```{r}
 Cen.gls <- gls(centrality_sq ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
 Cen.emm <- emmeans(Cen.gls, "mods")
 Cen.fac <- update(Cen.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("1","2","3","4","5","6","7","8","9","10",
+                area = c("0","1","2","3","4","5","6","7","8","9","10",
                          "11","12","13","14","15","16","17","18","19","20",
                          "21","22","23","24","25","26","27","28","29","30",
                          "31","32","33","34","35","36","37","38","39","40",
@@ -379,11 +400,27 @@ Cen.fac <- update(Cen.emm, levels = list(
                          "61","62","63","64","65","66","67","68","69","70",
                          "71","72","73","74","75","76","77","78","79","80",
                          "81","82","83","84","85","86","87","88","89","90",
-                         "91","92","93","94","95","96","97","98","99","100")))
+                         "91","92","93","94","95","96","97","98","99")))
 
 contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
+#node13, node18, node41, node50, node86
+IC13<-subset(warp, warp$IC == "IC_13")
+IC13p<-violin(IC13, IC13$mods, IC13$centrality)
+IC17<-subset(warp, warp$IC == "IC_17")
+IC17p<-violin(IC17, IC17$mods, IC17$centrality)
+IC41<-subset(warp, warp$IC == "IC_41")
+IC41p<-violin(IC41, IC41$mods, IC41$centrality)
+IC50<-subset(warp, warp$IC == "IC_50")
+IC50p<-violin(IC50, IC50$mods, IC50$centrality)
+IC86<-subset(warp, warp$IC == "IC_86")
+IC86p<-violin(IC86, IC86$mods, IC86$centrality)
+
+ggarrange(IC13p, IC17p, IC41p, IC50p, IC86p,
+          ncol = 2, nrows = 3)
 ```
-## By functional network 
+
+## 3.6.2 Functional Networks
+No differences in any functional networks were seen between the BMI groups.
 ```{r}
 Cen.gls <- gls(centrality_log ~ mods, data = warp_func)
 Cen.emm <- emmeans(Cen.gls, "mods")
@@ -396,7 +433,9 @@ Cen.fac <- update(Cen.emm, levels = list(
 contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
 ```
 
-## By module
+## 3.6.3 Module 
+The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (t-ratio= 3.07, SE= 0.11, pFDR3= 0.009). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (t-ratio= 3.14, SE= 0.11, pFDR3= 0.009). 
+
 ### visual 
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -410,6 +449,10 @@ Cen0.gls <- gls(centrality_log ~ visual, data = warp_mod, na.action = na.omit)
 Cen0.emm <- emmeans(Cen0.gls, "visual")
 
 contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+
+warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
+VizCenp<-violin(warp_mod, warp_mod$visual, warp_mod$centrality)
+VizCenp
 ```
 ### Sensory 
 ```{r}
@@ -469,8 +512,10 @@ contrast(Cen0.emm, "pairwise",  adjust = "fdr")
 ```
 
 
-# Participation coefficient
-## By IC
+# 3.4 Participation coefficient
+## 3.4.1 Nodal
+No differences between groups by nodal participation coefficient were observed with the more stringent (n=300) correction. Using the less stringent (n=3) correction for multiple comparisons, in node 13  the hBMI group exhibited higher participation coefficient compared to both the aBMI (t-ratio= -2.38, SE= 0.06, pFDR3= 0.03) and the vhBMI groups (t-ratio= 2.88, SE= 0.08, pFDR3= 0.01). In area 32, the hBMI again showed increased participation coefficient compared to the aBMI group (t-ratio= -2.49, SE= 0.07, pFDR3= 0.04). 
+
 ```{r}
 colnames(warp)
 warp$PC_z<-scale(warp$PC)
@@ -481,7 +526,7 @@ PC.gls <- gls(PC_log ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.o
 PC.emm <- emmeans(PC.gls, "mods")
 PC.fac <- update(PC.emm, levels = list(
                 group = c("no", "ov", "ob"), 
-                area = c("1","2","3","4","5","6","7","8","9","10",
+                area = c("0","1","2","3","4","5","6","7","8","9","10",
                          "11","12","13","14","15","16","17","18","19","20",
                          "21","22","23","24","25","26","27","28","29","30",
                          "31","32","33","34","35","36","37","38","39","40",
@@ -490,13 +535,22 @@ PC.fac <- update(PC.emm, levels = list(
                          "61","62","63","64","65","66","67","68","69","70",
                          "71","72","73","74","75","76","77","78","79","80",
                          "81","82","83","84","85","86","87","88","89","90",
-                         "91","92","93","94","95","96","97","98","99","100")))
+                         "91","92","93","94","95","96","97","98","99")))
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
-```
+#node13, node32
+IC13<-subset(warp, warp$IC == "IC_13")
+IC13p<-violin(IC13, IC13$mods, IC13$PC_z)
+IC32<-subset(warp, warp$IC == "IC_32")
+IC32p<-violin(IC32, IC32$mods, IC32$PC_z)
 
+ggarrange(IC13p, IC32p,
+          ncol = 2)
+```
+## 3.4.2 Functional Networks
+Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (t-ratio= 2.15, SE= 0.18, pFDR= 0.05) and the hBMI groups (t-ratio= 2.17, SE= 0.18, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (t-ratio= 3.40, SE= 0.09, pFDR= 0.002) and the hBMI (t-ratio=3.30 , SE= 0.09, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (t-ratio= 2.60, SE= 0.13, pFDR= 0.01) and the hBMI (t-ratio= 2.61, SE= 0.13, pFDR= 0.01) group.  
 ```{r}
-# warp_func$PC_z<-scale(warp_func$PC)
+warp_func$PC_z<-scale(warp_func$PC)
 # warp_func<-subset(warp_func, warp_func$PC_z > -3)
 # colnames(warp_func)
 PC.gls <- gls(PC_sq ~ mods, data = warp_func, na.action = na.omit)
@@ -508,14 +562,35 @@ PC.fac <- update(PC.emm, levels = list(
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
 contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+
+warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
+
+#node13, node32
+
+aud<-subset(warp_func, warp_func$area == "Auditory")
+aud<-aud[complete.cases(aud$area), ] 
+aud$mods<-factor(aud$mods)
+describeBy(aud$PC, aud$mods)
+
+smH<-subset(warp_func, warp_func$area ==  "Smhand")
+smH$mods<-factor(smH$mods)
+smHp<-violin(smH, smH$mods, smH$PC_z)
+smHp
+
+smM<-subset(warp_func, warp_func$area ==  "Smmouth")
+smM$mods<-factor(smM$mods)
+smMp<-violin(smM, smM$mods, smM$PC_z)
+describeBy(smM$PC_sq, smM$mods)
 ```
 
-## By module
+## 3.4.3 Module
+Within the visual modules, the vhBMI showed lower participation coefficients compared to both the aBMI (t-ratio= -5.60, SE= 0.04, pFDR< 0.0001) and the hBMI groups (t-ratio=-4.98, SE= 0.04, pFDR= 0.0001). Conversely, the participation coefficient for the vhBMI was higher in the sensory module (module 4) compared to the aBMI (module 2) (t-ratio=-10.27 , SE= 0.03 pFDR< 0.0001 ) and hBMI (module 2) (t-ratio= 9.93, SE= 0.03, pFDR< 0.0001). 
+
 ### visual 
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
 
-# warp_mod$PC_z<-scale(warp_mod$PC)
+warp_mod$PC_z<-scale(warp_mod$PC)
 # warp_mod<-subset(warp_mod, warp_mod$PC_z > -3)
 
 head(warp_mod)
@@ -528,9 +603,16 @@ PC0.gls <- gls(PC_sq ~ visual, data = warp_mod, na.action = na.omit)
 PC0.emm <- emmeans(PC0.gls, "visual")
 
 contrast(PC0.emm, "pairwise",  adjust = "fdr")
+
+warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
+VizPCp<-violin(warp_mod, warp_mod$visual, warp_mod$PC_z)
+VizPCp
 ```
 ### Sensory 
 ```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+warp_mod$PC_z<-scale(warp_mod$PC)
+
 warp_mod$sensory <- NA
 warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
@@ -540,6 +622,9 @@ PC0.gls <- gls(PC_sq ~ sensory, data = warp_mod, na.action = na.omit)
 PC0.emm <- emmeans(PC0.gls, "sensory")
 
 contrast(PC0.emm, "pairwise",  adjust = "fdr")
+warp_mod<-warp_mod[complete.cases(warp_mod$sensory), ] 
+SenPCp<-violin(warp_mod, warp_mod$sensory, warp_mod$PC_z)
+SenPCp
 ```
 ### DMN
 ```{r}
@@ -580,31 +665,8 @@ PC0.emm <- emmeans(PC0.gls, "other")
 contrast(PC0.emm, "pairwise",  adjust = "fdr")
 ```
 
-# Results summary
-## 3.3 Clustering coefficient
-### 3.3.1 Nodal
-After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), in node 23 the aBMI group exhibited higher clustering coefficient compared to the hBMI group (t-ratio = 2.84, SE=0.02, pFDR3 = 0.01). In node 74, the aBMI group has higher clustering coefficient compared to the vhBMI group (t-ratio= 2.62, SE= 0.01, pFDR3= 0.01), and the hBMI group showed increased clustering coefficient compared the the vhBMI group (t-ratio= 3.20, SE= 0.01, pFDR3= 0.004). 
-3.3.2 Functional Networks
-No differences in any functional networks were seen between the BMI groups. 
-### 3.3.3 Modules
-Between the sensory modules, aBMI module 2 trended towards increased clustering coefficient compared to the vhBMI module 4 (t-ratio=2.23 , SE= 0.02, pFDR= 0.09). The aBMI group additionally showed increased clustering coefficients within the subcortical module (module 5) compared to the vhBMI subcortical module (module 6) (t-ratio= 2.79, SE= 0.02, pFDR= 0.03).
 
-# 3.4 Participation coefficient
-## 3.4.1 Nodal
-No differences between groups by nodal participation coefficient were observed with the more stringent (n=300) correction. Using the less stringent (n=3) correction for multiple comparisons, in node 14  the hBMI group exhibited higher participation coefficient compared to both the aBMI (t-ratio= -2.38, SE= 0.06, pFDR3= 0.03) and the vhBMI groups (t-ratio= 2.88, SE= 0.08, pFDR3= 0.01). In area 33, the hBMI again showed increased participation coefficient compared to the aBMI group (t-ratio= -2.49, SE= 0.07, pFDR3= 0.04). 
-### 3.4.2 Functional Networks
-Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (t-ratio= 2.15, SE= 0.18, pFDR= 0.05) and the hBMI groups (t-ratio= 2.17, SE= 0.18, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (t-ratio= 3.40, SE= 0.09, pFDR= 0.002) and the hBMI (t-ratio=3.30 , SE= 0.09, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (t-ratio= 2.60, SE= 0.13, pFDR= 0.01) and the hBMI (t-ratio= 2.61, SE= 0.13, pFDR= 0.01) group.  
-### 3.4.3 Module
-Within the visual modules, the vhBMI showed higher participation coefficients compared to both the aBMI (t-ratio= -5.60, SE= 0.04, pFDR< 0.0001) and the hBMI groups (t-ratio=-4.98, SE= 0.04, pFDR= 0.0001). Conversely, the participation coefficient for the vhBMI was lower in the sensory module (module 4) compared to the aBMI (module 2) (t-ratio=-10.27 , SE= 0.03 pFDR< 0.0001 ) and hBMI (module 2) (t-ratio= 9.93, SE= 0.03, pFDR< 0.0001). 
-## 3.6 Betweenness centrality
-### 3.6.1 Nodal
-No differences were detected between BMI groups after correcting for multiple comparisons (n=300). Using the less stringent multiple comparison correction (n=3),  in node 14 the aBMI group had higher centrality compared to the hBMI group (t-ratio= 2.09, SE= 0.002, pFDR3= 0.05), and the vhBMI had higher centrality compared to the hBMI group (t-ratio= -2.83, SE= 0.003, pFDR3= 0.01). In node 18, the hBMI had higher centrality compared to both the aBMI (t-ratio= -2.38, SE= 0.002, pFDR3= 0.03) and vhBMI (t-ratio= 2.44, SE= 0.002, pFDR3= 0.03) groups. In node 42, the aBMI had higher centrality compared to the hBMI (t-ratio= 2.39, SE= 0.002, pFDR3= 0.02), and the vhBMI group exhibited higher centrality compared to the hBMI group (t-ratio= -3.47, SE= 0.003, pFDR3= 0.001). In node 51, the hBMI group exhibited lower centrality compared to both the aBMI (t-ratio= 2.85, SE= 0.002, pFDR3= 0.01) and the vhBMI (t-ratio= -1.94, SE= 0.003, pFDR3= 0.08) groups. In node 87, the vhBMI group exhibited decreased centrality compared to both the aBMI (t-ratio= 2.56, SE= 0.002, pFDR3= 0.02) and the hBMI (t-ratio= 3.02, SE= 0.002, pFDR3= 0.01) groups. 
-### 3.6.2 Functional Networks
-No differences in any functional networks were seen between the BMI groups.
-### 3.6.3 Module 
-The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (t-ratio= 3.07, SE= 0.11, pFDR3= 0.009). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (t-ratio= 3.14, SE= 0.11, pFDR3= 0.009). 
-
-# Post hoc analysis of behavioral measures
+# 3.7 Post Hoc Comparison with behavioral measures
 ## Data prep
 ```{r}
 colnames(graph_df)
@@ -638,8 +700,8 @@ fit_function<-function(x,y,z,data){
 }
 ```
 ## By funtional network 
-### Participation coeff
-#### auditory
+## 3.7.1 Participation coeff
+### 3.7.1.1 Auditory
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
@@ -682,13 +744,14 @@ PC_auditory
 ```
 
 
-#### somatosensory hand
+### 3.7.1.2 Somatosensory hand
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
+warp_1$PC_z<-scale(warp_1$PC)
 warp_1$Smhand <- NA
 warp_1[warp_1$mods == 'no.Smhand', "Smhand"] <- 'aBMISmhand'
-warp_1[warp_1$mods == 'ovSmhand', "Smhand"] <- 'hBMISmhand'
+warp_1[warp_1$mods == 'ov.Smhand', "Smhand"] <- 'hBMISmhand'
 warp_1[warp_1$mods == 'ob.Smhand', "Smhand"] <- 'vhBMISmhand'
 colnames(warp_1)
 ```
@@ -720,6 +783,25 @@ df_PChand<-bind_rows(smhand2)
 df_PChand$pFDR<-p.adjust(df_PChand$p.value, method = "BH")
 PC_hand<-df_PChand[df_PChand$pFDR <= 0.05, ] 
 PC_hand
+#Working Memory (List Sorting)
+#Cognitive Function Composite score
+#Crystallized Cognition Composite score
+warp_1<-warp_1[complete.cases(warp_1$Smhand), ] 
+
+dex<-ggplot(warp_1, aes(x=PC_z, y=Dexterity_AgeAdj, color=Smhand)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+CFC<-ggplot(warp_1, aes(x=PC_z, y=CogTotalComp_AgeAdj, color=Smhand)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+Crystal<-ggplot(warp_1, aes(x=PC_z, y=CogCrystalComp_AgeAdj, color=Smhand)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(dex, CFC, Crystal,
+          ncol = 2, nrow = 2)
 ```
 #### somatosensory mouth 
 ```{r}
@@ -728,7 +810,7 @@ warp_1 <- transform(module_df, mods = interaction(group, area))
 
 warp_1$Smmouth <- NA
 warp_1[warp_1$mods == 'no.Smmouth', "Smmouth"] <- 'aBMISmmouth'
-warp_1[warp_1$mods == 'ovSmmouth', "Smmouth"] <- 'hBMISmmouth'
+warp_1[warp_1$mods == 'ov.Smmouth', "Smmouth"] <- 'hBMISmmouth'
 warp_1[warp_1$mods == 'ob.Smmouth', "Smmouth"] <- 'vhBMISmmouth'
 colnames(warp_1)
 ```
@@ -760,6 +842,27 @@ df_PCmouth<-bind_rows(smmouth2)
 df_PCmouth$pFDR<-p.adjust(df_PCmouth$p.value, method = "BH")
 PC_mouth<-df_PCmouth[df_PCmouth$pFDR <= 0.05, ] 
 PC_mouth
+
+#Taste_AgeAdj
+#ListSort_AgeAdj
+#CogTotalComp_AgeAdj
+warp_1$PC_z<-scale(warp_1$PC)
+warp_1<-warp_1[complete.cases(warp_1$Smmouth), ] 
+
+taste<-ggplot(warp_1, aes(x=PC_z, y=Taste_AgeAdj, color=Smmouth)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+WM<-ggplot(warp_1, aes(x=PC_z, y=ListSort_AgeAdj, color=Smmouth)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+cog<-ggplot(warp_1, aes(x=PC_z, y=CogTotalComp_AgeAdj, color=Smmouth)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(taste, WM, cog,
+          ncol = 2, nrow = 2)
 ```
 
 ### Participation coeff
@@ -801,6 +904,27 @@ df_PCviz<-bind_rows(visualmod2)
 df_PCviz$pFDR<-p.adjust(df_PCviz$p.value, method = "BH")
 PC_visualmod<-df_PCviz[df_PCviz$pFDR <= 0.05, ] 
 PC_visualmod
+
+# ListSort_AgeAdj
+# CogTotalComp_AgeAdj
+# DDisc_AUC_40K
+warp_2$PC_z<-scale(warp_2$PC)
+warp_2<-warp_2[complete.cases(warp_2$visual), ] 
+
+WMvis<-ggplot(warp_2, aes(x=PC_log, y=ListSort_AgeAdj, color=visual)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+WMvis
+cogvis<-ggplot(warp_2, aes(x=PC_log, y=CogTotalComp_AgeAdj, color=visual)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ddvis<-ggplot(warp_2, aes(x=PC_log, y=DDisc_AUC_40K, color=visual)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(WMvis, cogvis, ddvis,
+          ncol = 2, nrow = 2)
 ```
 
 #### Sensory 
@@ -840,6 +964,28 @@ df_PCsen<-bind_rows(sensorymod2)
 df_PCsen$pFDR<-p.adjust(df_PCsen$p.value, method = "BH")
 PC_sensorymod<-df_PCsen[df_PCsen$pFDR <= 0.05, ] 
 PC_sensorymod
+
+
+# Taste_AgeAdj
+# CogTotalComp_AgeAdj
+# DDisc_AUC_200
+warp_2$PC_z<-scale(warp_2$PC)
+warp_2<-warp_2[complete.cases(warp_2$sensory), ] 
+
+WMsen<-ggplot(warp_2, aes(x=PC_log, y=Taste_AgeAdj, color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+cogsen<-ggplot(warp_2, aes(x=PC_log, y=CogTotalComp_AgeAdj, color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ddsen<-ggplot(warp_2, aes(x=PC_log, y=DDisc_AUC_200, color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(WMsen, cogsen, ddsen,
+          ncol = 2, nrow = 2)
 ```
 ### Betweennness centrality 
 #### visual
@@ -879,6 +1025,27 @@ df_Cenviz<-bind_rows(visualmod2)
 df_Cenviz$pFDR<-p.adjust(df_Cenviz$p.value, method = "BH")
 CEN_visualmod<-df_Cenviz[df_Cenviz$pFDR <= 0.05, ] 
 CEN_visualmod
+
+
+#  ListSort_AgeAdj
+# CogTotalComp_AgeAdj
+# DDisc_AUC_200
+warp_3<-warp_3[complete.cases(warp_3$visual), ] 
+
+WMvis<-ggplot(warp_3, aes(x=centrality, y= ListSort_AgeAdj, color=visual)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+cogvis<-ggplot(warp_3, aes(x=centrality, y=CogTotalComp_AgeAdj, color=visual)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ddvis<-ggplot(warp_3, aes(x=centrality, y=DDisc_AUC_40K, color=visual)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(WMvis, cogvis, ddvis,
+          ncol = 2, nrow = 2)
 ```
 ## Clustering coefficient 
 #### Sensory 
@@ -919,10 +1086,28 @@ df_CCsen<-bind_rows(sensorymod2)
 df_CCsen$pFDR<-p.adjust(df_CCsen$p.value, method = "BH")
 CC_sensory<-df_CCsen[df_CCsen$pFDR <= 0.05, ] 
 CC_sensory
+
+
+#  ListSort_AgeAdj
+# CogTotalComp_AgeAdj
+# DDisc_AUC_200
+warp_X<-warp_X[complete.cases(warp_X$sensory), ] 
+
+tastesen<-ggplot(warp_X, aes(x=clustering, y= Taste_AgeAdj, color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+cogsen<-ggplot(warp_X, aes(x=clustering, y=CogTotalComp_AgeAdj, color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ddsen<-ggplot(warp_X, aes(x=clustering, y=DDisc_AUC_200 , color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(tastesen, cogsen, ddsen,
+          ncol = 2, nrow = 2)
 ```
-warp_mod[warp_mod$mods == 'normal.5', "subcort"] <- 'aBMI5'
-warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
-warp_mod[warp_mod$mods == 'obese.6', "subcort"] <- 'vhBMI6'
 
 #### Subcortical 
 ```{r}
@@ -962,6 +1147,27 @@ df_CCsub<-bind_rows(subcorticalmod2)
 df_CCsub$pFDR<-p.adjust(df_CCsub$p.value, method = "BH")
 CC_subcortical<-df_CCsub[df_CCsub$pFDR <= 0.05, ] 
 CC_subcortical
+
+
+#  ListSort_AgeAdj
+# CogTotalComp_AgeAdj
+# DDisc_AUC_200
+warp_X<-warp_X[complete.cases(warp_X$subcortical), ] 
+
+tastesen<-ggplot(warp_X, aes(x=clustering, y= Taste_AgeAdj, color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+cogsen<-ggplot(warp_X, aes(x=clustering, y=CogTotalComp_AgeAdj, color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ddsen<-ggplot(warp_X, aes(x=clustering, y=DDisc_AUC_40K , color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+
+ggarrange(tastesen, cogsen, ddsen,
+          ncol = 2, nrow = 2)
 ```
 
 ###  Combine the tables
@@ -1026,9 +1232,7 @@ df_func<-function(df, m, a){
 }
 ```
 
-```{r}
-PC_auditory
-```
+
 
 
 ```{r}
@@ -1049,5 +1253,13 @@ colnames(all_df)<-colz
 all_df$`Behavioral variable`<-as.factor(all_df$`Behavioral variable`)
 all_df
 ```
+
+
+```{r}
+write.table(all_df, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/post_hoc.csv", sep=",", row.names = F)
+```
+
+
+
 
 
