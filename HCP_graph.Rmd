@@ -294,6 +294,10 @@ df_PC[df_PC$p.value <= 0.05, ]
 chisq.test(table(graph_df$group, graph_df$node_type))
 tapply(graph_df$group, graph_df$node_type, summary)
 
+nodes<-table(graph_df$group, graph_df$node_type)
+nodes
+write.table(nodes, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/node_freq.csv", sep=",")
+
 balloonplot(table(graph_df$group, graph_df$node_type), main ="Node Frequencies", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 5, colmar=5, dotcolor=cbPalette)
 ```
@@ -437,6 +441,7 @@ violin(PC_2, PC_2$group, PC_2$PC)
 PC_0<-subset(warp, warp$module == "0")
 violin(PC_0, PC_0$group, PC_0$PC)
 ```
+
 ## Testing edges 
 ```{r}
 mod_edge_df$source<-as.factor(mod_edge_df$source)
@@ -505,7 +510,23 @@ zW.fac <- update(zW.emm, levels = list(
                          "4.5","4.6",
                          "5.6")))
 total <- contrast(zW.fac, "pairwise", by = "edge", adjust = "fdr")
-total
+total_edge<-data.frame(total)
+vars<-c("contrast", "edge","t.ratio","SE", "p.value")
+r2<-c("t.ratio","SE")
+r3<-c("p.value")
+
+total_edge<-total_edge[vars]
+total_edge[r2]<-round(total_edge[r2], 2)
+total_edge[r3]<-round(total_edge[r3], 3)
+
+levels(total_edge$contrast)
+total_edge$Contrast <- NA
+total_edge[total_edge$contrast == "no - ov", "Contrast"] <- 'aBMI vs. hBMI'
+total_edge[total_edge$contrast == "no - ob", "Contrast"] <- 'aBMI vs. vhBMI'
+total_edge[total_edge$contrast == "ov - ob", "Contrast"] <- 'hBMI vs. vhBMI'
+keep<-c("edge","Contrast","t.ratio","SE", "p.value")   
+total_edge<-total_edge[keep]
+write.table(total_edge, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/edges_table.csv", sep=",", row.names = F)
 ```
 ## `xtable` with HTML
 ```{r, echo=FALSE, message=FALSE, results='asis'}

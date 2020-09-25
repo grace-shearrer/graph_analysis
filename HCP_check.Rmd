@@ -24,6 +24,7 @@ library(multcomp)
 library(gridExtra)
 library(grid)
 library(nlme)
+library(ggpubr)
 ```
 
 # Functions
@@ -132,6 +133,13 @@ kc<-max(graph_df$clustering)
 hist(sqrt(kc-graph_df$clustering), breaks = 100)
 graph_df$clustering_sq<-sqrt(kc-graph_df$clustering)
 ```
+
+## Edge data
+```{r}
+edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_edge_data.csv", sep=",", header = T)
+mod_edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_comm_edge_data.csv", sep=",", header = T)
+```
+
 
 # Cleanup, center, ect
 ```{r, echo=FALSE}
@@ -245,19 +253,16 @@ mdf<-subset(graph_df, graph_df$module != 7)
 mdf<-subset(mdf, mdf$module != 8)
 mdf$module<-factor(mdf$module)
 warp_mod <- transform(mdf, mods = interaction(group, module))
-summary(warp_mod$module)
-head(warp_mod)
 ```
 
 # 3.3 Clustering coefficient
 ## 3.3.1 Nodal
-After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), in node 22 the aBMI group exhibited higher clustering coefficient compared to the hBMI group (t-ratio = 2.84, SE=0.02, pFDR3 = 0.01). In node 73, the aBMI group has higher clustering coefficient compared to the vhBMI group (t-ratio= 2.62, SE= 0.01, pFDR3= 0.01), and the hBMI group showed increased clustering coefficient compared the the vhBMI group (t-ratio= 3.20, SE= 0.01, pFDR3= 0.004). 
+After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), in node 22 the aBMI group exhibited higher clustering coefficient compared to the hBMI group (d = 0.64, SE = 0.22, sigma = 0.07, pFDR3 = 0.01). In node 73, the aBMI group has higher clustering coefficient compared to the vhBMI group (d = 0.49, SE = 0.19 pFDR3= 0.01), and the hBMI group showed increased clustering coefficient compared the the vhBMI group (d = 0.63, SE= 0.19, sigma = 0.07, pFDR3= 0.004). 
 
 ```{r}
-library(ggpubr)
-CC.gls <- gls(clustering ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
-CC.emm <- emmeans(CC.gls, "mods")
-CC.fac <- update(CC.emm, levels = list(
+CC.IC.gls <- gls(clustering ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
+CC.IC.emm <- emmeans(CC.IC.gls, "mods")
+CC.IC.fac <- update(CC.IC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("0","1","2","3","4","5","6","7","8","9","10",
                          "11","12","13","14","15","16","17","18","19","20",
@@ -270,8 +275,12 @@ CC.fac <- update(CC.emm, levels = list(
                          "81","82","83","84","85","86","87","88","89","90",
                          "91","92","93","94","95","96","97","98","99")))
 
-contrast(CC.fac, "pairwise", by = "area", adjust = "fdr")
-levels(warp$mods)
+contrast(CC.IC.fac, "pairwise", by = "area", adjust = "fdr")
+pwpm(CC.IC.fac, by = "area", adjust = "fdr")
+eff_size(CC.IC.fac, sigma = sigma(CC.IC.gls), edf = 16609, by = "area")
+```
+
+```{r}
 IC22<-subset(warp, warp$IC == "IC_22")
 IC22p<-violin(IC22, IC22$mods, IC22$clustering)
 IC73<-subset(warp, warp$IC == "IC_73")
@@ -283,18 +292,21 @@ ggarrange(IC22p, IC73p,
 # 3.3.2 Functional Networks
 No differences in any functional networks were seen between the BMI groups. 
 ```{r}
-CC.gls <- gls(clustering ~ mods, data = warp_func)
-CC.emm <- emmeans(CC.gls, "mods")
-CC.fac <- update(CC.emm, levels = list(
+F.CC.gls <- gls(clustering ~ mods, data = warp_func)
+F.CC.emm <- emmeans(F.CC.gls, "mods")
+F.CC.fac <- update(F.CC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
-contrast(CC.fac, "pairwise", by = "area", adjust = "fdr")
+contrast(F.CC.fac, "pairwise", by = "area", adjust = "fdr")
+pwpm(F.CC.fac, by = "area", adjust = "fdr")
+eff_size(F.CC.fac, sigma = sigma(CC.IC.gls), edf = 16609, by = "area")
+
 ```
 ## 3.3.3 Modules
-Between the sensory modules, aBMI module 2 trended towards increased clustering coefficient compared to the vhBMI module 4 (t-ratio=2.23 , SE= 0.02, pFDR= 0.09). The aBMI group additionally showed increased clustering coefficients within the subcortical module (module 5) compared to the vhBMI subcortical module (module 6) (t-ratio= 2.79, SE= 0.02, pFDR= 0.03).
+Between the sensory modules, aBMI module 2 trended towards increased clustering coefficient compared to the vhBMI module 4 (d = 0.86, SE = 0.41, signma = 0.06, pFDR3= 0.09). The aBMI group additionally showed increased clustering coefficients within the subcortical module (module 5) compared to the vhBMI subcortical module (module 6) (d = 1.298, SE = 0.506, sigma = 0.04, pFDR3= 0.03).
 
 ```{r}
 # mod
@@ -312,10 +324,12 @@ warp_mod[warp_mod$mods == 'normal.0', "visual"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.0', "visual"] <- 'hBMI2'
 warp_mod[warp_mod$mods == 'obese.0', "visual"] <- 'vhBMI4'
 
-CC0.gls <- gls(clustering ~ visual, data = warp_mod, na.action = na.omit)
-CC0.emm <- emmeans(CC0.gls, "visual")
+M.CC0.gls <- gls(clustering ~ visual, data = warp_mod, na.action = na.omit)
+M.CC0.emm <- emmeans(M.CC0.gls, "visual")
 
-contrast(CC0.emm, "pairwise",  adjust = "fdr")
+contrast(M.CC0.emm, "pairwise",  adjust = "fdr")
+pwpm(M.CC0.emm, adjust = "fdr")
+eff_size(M.CC0.emm, sigma = sigma(M.CC0.gls), edf = 21)
 ```
 ### Sensory 
 ```{r}
@@ -327,10 +341,15 @@ warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
 warp_mod[warp_mod$mods == 'obese.4', "sensory"] <- 'vhBMI4'
 
-CC0.gls <- gls(clustering ~ sensory, data = warp_mod, na.action = na.omit)
-CC0.emm <- emmeans(CC0.gls, "sensory")
+Msen.CC0.gls <- gls(clustering ~ sensory, data = warp_mod, na.action = na.omit)
+Msen.CC0.emm <- emmeans(Msen.CC0.gls, "sensory")
 
-contrast(CC0.emm, "pairwise",  adjust = "fdr")
+contrast(Msen.CC0.emm, "pairwise",  adjust = "fdr")
+pwpm(Msen.CC0.emm, adjust = "fdr")
+eff_size(Msen.CC0.emm, sigma = sigma(Msen.CC0.gls), edf = 21)
+```
+
+```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$sensory), ] 
 SenCCp<-violin(warp_mod, warp_mod$sensory, warp_mod$clustering)
 SenCCp
@@ -359,10 +378,16 @@ warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
 warp_mod[warp_mod$mods == 'obese.6', "subcort"] <- 'vhBMI6'
 
 
-CC0.gls <- gls(clustering ~ subcort, data = warp_mod, na.action = na.omit)
-CC0.emm <- emmeans(CC0.gls, "subcort")
+Msub.CC0.gls <- gls(clustering ~ subcort, data = warp_mod, na.action = na.omit)
+Msub.CC0.emm <- emmeans(Msub.CC0.gls, "subcort")
 
-contrast(CC0.emm, "pairwise",  adjust = "fdr")
+contrast(Msub.CC0.emm, "pairwise",  adjust = "fdr")
+pwpm(Msub.CC0.emm, adjust = "fdr")
+eff_size(Msub.CC0.emm, sigma = sigma(Msub.CC0.gls), edf = 21)
+
+```
+
+```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$subcort), ] 
 SubCCp<-violin(warp_mod, warp_mod$subcort, warp_mod$clustering)
 SubCCp
@@ -385,11 +410,14 @@ contrast(CC0.emm, "pairwise",  adjust = "fdr")
 
 # 3.6 Betweenness centrality
 ## 3.6.1 Nodal
-No differences were detected between BMI groups after correcting for multiple comparisons (n=300). Using the less stringent multiple comparison correction (n=3),  in node 13 the aBMI group had higher centrality compared to the hBMI group (t-ratio= 2.09, SE= 0.002, pFDR3= 0.05), and the vhBMI had higher centrality compared to the hBMI group (t-ratio= -2.83, SE= 0.003, pFDR3= 0.01). In node 17, the hBMI had higher centrality compared to both the aBMI (t-ratio= -2.38, SE= 0.002, pFDR3= 0.03) and vhBMI (t-ratio= 2.44, SE= 0.002, pFDR3= 0.03) groups. In node 41, the aBMI had higher centrality compared to the hBMI (t-ratio= 2.39, SE= 0.002, pFDR3= 0.02), and the vhBMI group exhibited higher centrality compared to the hBMI group (t-ratio= -3.47, SE= 0.003, pFDR3= 0.001). In node 50, the hBMI group exhibited lower centrality compared to both the aBMI (t-ratio= 2.85, SE= 0.002, pFDR3= 0.01) and the vhBMI (t-ratio= -1.94, SE= 0.003, pFDR3= 0.08) groups. In node 86, the vhBMI group exhibited decreased centrality compared to both the aBMI (t-ratio= 2.56, SE= 0.002, pFDR3= 0.02) and the hBMI (t-ratio= 3.02, SE= 0.002, pFDR3= 0.01) groups. 
+No differences were detected between BMI groups after correcting for multiple comparisons (n=300). Using the less stringent multiple comparison correction (n=3),in node 13 the aBMI group had higher centrality compared to the hBMI group (d = 0.14, SE = 0.07, sigma = 0.04, pFDR3= 0.05), and the vhBMI had higher centrality compared to the hBMI group (d = -0.24, SE = 0.06, sigma = 0.04, pFDR3= 0.01). In node 17, the hBMI had higher centrality compared to both the aBMI (d = -0.12, SE= 0.05, sigma = 0.04, pFDR3= 0.03) and vhBMI (d = 0.15, SE = 0.06, sigma = 0.04, pFDR3= 0.03) groups. 
+In node 41, the aBMI had higher centrality compared to the hBMI (d = 0.15, SE = 0.07, sigma = 0.04, pFDR3= 0.02), and the vhBMI group exhibited higher centrality compared to the hBMI group (d = -0.29, SE = 0.08, sigma = 0.04, pFDR3= 0.001). 
+In node 50, the hBMI group exhibited lower centrality compared to both the aBMI (d = 0.15, SE = 0.05, sigma = 0.04, pFDR3= 0.01) and the vhBMI (d = -0.12, SE=0.03, sigma = 0.04, pFDR3= 0.08) groups. 
+In node 86, the vhBMI group exhibited decreased centrality compared to both the aBMI (d = 0.15, SE = 0.06, sigma = 0.04, pFDR3= 0.02) and the hBMI (d = 0.19, SE = 0.06, sigma = 0.04, pFDR3= 0.01) groups. 
 ```{r}
-Cen.gls <- gls(centrality_sq ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
-Cen.emm <- emmeans(Cen.gls, "mods")
-Cen.fac <- update(Cen.emm, levels = list(
+IC.Cen.gls <- gls(centrality_sq ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
+IC.Cen.emm <- emmeans(IC.Cen.gls, "mods")
+IC.Cen.fac <- update(IC.Cen.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("0","1","2","3","4","5","6","7","8","9","10",
                          "11","12","13","14","15","16","17","18","19","20",
@@ -400,10 +428,12 @@ Cen.fac <- update(Cen.emm, levels = list(
                          "61","62","63","64","65","66","67","68","69","70",
                          "71","72","73","74","75","76","77","78","79","80",
                          "81","82","83","84","85","86","87","88","89","90",
-                         "91","92","93","94","95","96","97","98","99")))
+                         "91","92","93","94","95","96","97","98","99")),
+                adjust = "fdr")
 
-contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
-eff_size(pigs.emm.s, sigma = sigma(pigs.lm), edf = 23)
+contrast(IC.Cen.fac, "pairwise", by = "area", adjust = "fdr")
+pwpm(IC.Cen.fac, adjust = "fdr", by = "area")
+eff_size(IC.Cen.fac, sigma = sigma(Msub.CC0.gls), edf = 16609, by = "area")
 ```
 
 ```{r}
@@ -434,12 +464,13 @@ Cen.fac <- update(Cen.emm, levels = list(
                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
-contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
+# contrast(Cen.fac, "pairwise", by = "area", adjust = "fdr")
+eff_size(Cen.emm, sigma = sigma(Cen.gls), edf = 300)
+
 ```
 
 ## 3.6.3 Module 
-The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (t-ratio= 3.07, SE= 0.11, pFDR3= 0.009). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (t-ratio= 3.14, SE= 0.11, pFDR3= 0.009). 
-
+The aBMI visual module (module 0) showed increased betweenness centrality compared to the vhBMI visual module (module 0) (d = 1.71, SE = 0.71, sigma = 0.20, pFDR3= 0.009). The hBMI visual module (module 0) also showed increased betweenness centrality compared to the vhBMI visual module (d = 1.76, SE = 0.62, sigma = 0.20, pFDR3= 0.009).
 ### visual 
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -449,11 +480,14 @@ warp_mod[warp_mod$mods == 'normal.0', "visual"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.0', "visual"] <- 'hBMI2'
 warp_mod[warp_mod$mods == 'obese.0', "visual"] <- 'vhBMI4'
 
-Cen0.gls <- gls(centrality_log ~ visual, data = warp_mod, na.action = na.omit)
-Cen0.emm <- emmeans(Cen0.gls, "visual")
+M.Cen0.gls <- gls(centrality_log ~ visual, data = warp_mod, na.action = na.omit)
+M.Cen0.emm <- emmeans(M.Cen0.gls, "visual")
 
-contrast(Cen0.emm, "pairwise",  adjust = "fdr")
+contrast(M.Cen0.emm, "pairwise",  adjust = "fdr")
+eff_size(M.Cen0.emm, sigma = sigma(M.Cen0.gls), edf = 21)
+```
 
+```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
 VizCenp<-violin(warp_mod, warp_mod$visual, warp_mod$centrality)
 VizCenp
@@ -520,16 +554,16 @@ contrast(Cen0.emm, "pairwise",  adjust = "fdr")
 
 # 3.4 Participation coefficient
 ## 3.4.1 Nodal
-No differences between groups by nodal participation coefficient were observed with the more stringent (n=300) correction. Using the less stringent (n=3) correction for multiple comparisons, in node 13  the hBMI group exhibited higher participation coefficient compared to both the aBMI (t-ratio= -2.38, SE= 0.06, pFDR3= 0.03) and the vhBMI groups (t-ratio= 2.88, SE= 0.08, pFDR3= 0.01). In area 32, the hBMI again showed increased participation coefficient compared to the aBMI group (t-ratio= -2.49, SE= 0.07, pFDR3= 0.04). 
+No differences between groups by nodal participation coefficient were observed with the more stringent (n=300) correction. Using the less stringent (n=3) correction for multiple comparisons, in node 13  the hBMI group exhibited higher participation coefficient compared to both the aBMI (d = -0.48, SE = 0.20, sigma = 0.31 , pFDR3= 0.03) and the vhBMI groups (d = 0.74, SE = 0.26, sigma = 0.31, pFDR3= 0.01). In area 32, the hBMI again showed increased participation coefficient compared to the aBMI group (d = -0.39, SE =0.16, sigma = 0.31 pFDR3= 0.04). 
 
 ```{r}
-colnames(warp)
+# colnames(warp)
 # describeBy(warp$PC_z, warp$group)
 # warp<-subset(warp, warp$PC_z > -0.03)
 
-PC.gls <- gls(PC_log ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
-PC.emm <- emmeans(PC.gls, "mods")
-PC.fac <- update(PC.emm, levels = list(
+IC.PC.gls <- gls(PC_log ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
+IC.PC.emm <- emmeans(IC.PC.gls, "mods")
+IC.PC.fac <- update(IC.PC.emm, levels = list(
                 group = c("no", "ov", "ob"), 
                 area = c("0","1","2","3","4","5","6","7","8","9","10",
                          "11","12","13","14","15","16","17","18","19","20",
@@ -542,7 +576,11 @@ PC.fac <- update(PC.emm, levels = list(
                          "81","82","83","84","85","86","87","88","89","90",
                          "91","92","93","94","95","96","97","98","99")))
 
-contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+contrast(IC.PC.fac, "pairwise", by = "area", adjust = "fdr")
+eff_size(IC.PC.fac, sigma = sigma(IC.PC.gls), edf = 16609, by ="area")
+```
+
+```{r}
 #node13, node32
 warp$PC_z<-scale(warp$PC)
 
@@ -555,25 +593,27 @@ ggarrange(IC13p, IC32p,
           ncol = 2)
 ```
 ## 3.4.2 Functional Networks
-Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (t-ratio= 2.15, SE= 0.18, pFDR= 0.05) and the hBMI groups (t-ratio= 2.17, SE= 0.18, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (t-ratio= 3.40, SE= 0.09, pFDR= 0.002) and the hBMI (t-ratio=3.30 , SE= 0.09, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (t-ratio= 2.60, SE= 0.13, pFDR= 0.01) and the hBMI (t-ratio= 2.61, SE= 0.13, pFDR= 0.01) group.  
+Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (d = 3.04, SE = 1.42, sigma = 0.13, pFDR= 0.05) and the hBMI groups (d =3.07, SE = 1.42, sigma = 0.13, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (d = 2.40, SE = 0.70, sigma = 0.13, pFDR= 0.002) and the hBMI (d = 2.33, SE = 0.71, sigma = 0.13, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (d = 2.60, SE = 1.01, sigma = 0.13, pFDR= 0.01) and the hBMI (d = 2.61, SE = 1.01, sigma = 0.13, pFDR= 0.01) group.  
 ```{r}
 # warp_func<-subset(warp_func, warp_func$PC_z > -3)
 # colnames(warp_func)
-PC.gls <- gls(PC_sq ~ mods, data = warp_func, na.action = na.omit)
-PC.emm <- emmeans(PC.gls, "mods")
-PC.fac <- update(PC.emm, levels = list(
+F.PC.gls <- gls(PC_sq ~ mods, data = warp_func, na.action = na.omit)
+F.PC.emm <- emmeans(F.PC.gls, "mods")
+F.PC.fac <- update(F.PC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
                 area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
                          "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
                          "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
 
-contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
-PC.fac
-eff_size(PC.emm, sigma = sigma(PC.gls), edf = 246)
+contrast(F.PC.fac, "pairwise", by = "area", adjust = "fdr")
 
+eff_size(F.PC.fac, sigma = sigma(F.PC.gls), edf = 246, by ="area")
+```
+
+```{r}
 #node13, node32
 warp_func$PC_z<-scale(warp_func$PC)
-
+library(psych)
 aud<-subset(warp_func, warp_func$area == "Auditory")
 aud<-aud[complete.cases(aud$area), ] 
 aud$mods<-factor(aud$mods)
@@ -592,7 +632,7 @@ describeBy(smM$PC_sq, smM$mods)
 ```
 
 ## 3.4.3 Module
-Within the visual modules, the vhBMI showed lower participation coefficients compared to both the aBMI (t-ratio= -5.60, SE= 0.04, pFDR< 0.0001) and the hBMI groups (t-ratio=-4.98, SE= 0.04, pFDR= 0.0001). Conversely, the participation coefficient for the vhBMI was higher in the sensory module (module 4) compared to the aBMI (module 2) (t-ratio=-10.27 , SE= 0.03 pFDR< 0.0001 ) and hBMI (module 2) (t-ratio= 9.93, SE= 0.03, pFDR< 0.0001). 
+Within the visual modules, the vhBMI showed lower participation coefficients compared to both the aBMI (d = -3.13, SE = 0.71, sigma = 0.07, pFDR< 0.0001) and the hBMI groups (d = -2.78, SE = 0.70, sigma = 0.07, pFDR= 0.0001). Conversely, the participation coefficient for the vhBMI was higher in the sensory module (module 4) compared to the aBMI (module 2) (d = 3.97, SE = 0.28, sigma = 0.08, pFDR< 0.0001 ) and hBMI (module 2) (d = 3.86, SE = 0.71, sigma = 0.08 pFDR< 0.0001). 
 
 ### visual 
 ```{r}
@@ -605,11 +645,14 @@ warp_mod[warp_mod$mods == 'normal.0', "visual"] <- 'aBMI0'
 warp_mod[warp_mod$mods == 'overweight.0', "visual"] <- 'hBMI0'
 warp_mod[warp_mod$mods == 'obese.0', "visual"] <- 'vhBMI0'
 
-PC0.gls <- gls(PC_sq ~ visual, data = warp_mod, na.action = na.omit)
-PC0.emm <- emmeans(PC0.gls, "visual")
+Mvis.PC0.gls <- gls(PC_sq ~ visual, data = warp_mod, na.action = na.omit)
+Mvis.PC0.emm <- emmeans(Mvis.PC0.gls, "visual")
 
-contrast(PC0.emm, "pairwise",  adjust = "fdr")
+contrast(Mvis.PC0.emm, "pairwise",  adjust = "fdr")
+eff_size(Mvis.PC0.emm, sigma = sigma(Mvis.PC0.gls), edf = 21)
+```
 
+```{r}
 warp_mod$PC_z<-scale(warp_mod$PC)
 
 warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
@@ -626,16 +669,22 @@ warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
 warp_mod[warp_mod$mods == 'obese.4', "sensory"] <- 'vhBMI4'
 
-PC0.gls <- gls(PC_sq ~ sensory, data = warp_mod, na.action = na.omit)
-PC0.emm <- emmeans(PC0.gls, "sensory")
+Msen.PC0.gls <- gls(PC_sq ~ sensory, data = warp_mod, na.action = na.omit)
+Msen.PC0.emm <- emmeans(Msen.PC0.gls, "sensory")
 
-contrast(PC0.emm, "pairwise",  adjust = "fdr")
+contrast(Msen.PC0.emm, "pairwise",  adjust = "fdr")
+eff_size(Msen.PC0.emm, sigma = sigma(Msen.PC0.gls), edf = 21)
+```
+
+```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$sensory), ] 
 SenPCp<-violin(warp_mod, warp_mod$sensory, warp_mod$PC_z)
 SenPCp
 ```
 ### DMN
 ```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
 warp_mod$DMN <- NA
 warp_mod[warp_mod$mods == 'normal.1', "DMN"] <- 'aBMI1'
 warp_mod[warp_mod$mods == 'overweight.1', "DMN"] <- 'hBMI1'
@@ -648,6 +697,8 @@ contrast(PC0.emm, "pairwise",  adjust = "fdr")
 ```
 ### subcortical
 ```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
 warp_mod$subcort <- NA
 warp_mod[warp_mod$mods == 'normal.5', "subcort"] <- 'aBMI5'
 warp_mod[warp_mod$mods == 'overweight.6', "subcort"] <- 'hBMI6'
@@ -661,6 +712,8 @@ contrast(PC0.emm, "pairwise",  adjust = "fdr")
 ```
 ### other
 ```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+
 warp_mod$other <- NA
 warp_mod[warp_mod$mods == 'normal.3', "other"] <- 'aBMI2'
 warp_mod[warp_mod$mods == 'overweight.3', "other"] <- 'hBMI2'
@@ -734,7 +787,8 @@ for (i in seq(28, 52, by= 1)){
   out<-fit_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  aud[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  aud[[i]] <-list(out, df, test.emm, EF)
 }
 
 aud2<-list()
@@ -743,13 +797,29 @@ for(i in seq(1, 24, by = 1)){
   df<-aud[28:64][[i]][[2]]
   df$var<-names[i]
   aud2[[i]] <-list(df)
-  }
+}
+
+aud4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-aud[28:64][[i]][[4]]
+  df$var<-names[i]
+  aud4[[i]] <-list(df)
+}
 
 df_PCaud<-bind_rows(aud2)
+EF_PCaud<-bind_rows(aud4)
+
+df_PCaud$contrast<-as.factor(df_PCaud$contrast)
+EF_PCaud$contrast<-as.factor(EF_PCaud$contrast)
+df_PCaud<-cbind(df_PCaud, EF_PCaud)
+
 df_PCaud$pFDR<-p.adjust(df_PCaud$p.value, method = "BH")
+df_PCaud
 PC_auditory<-df_PCaud[df_PCaud$pFDR <= 0.05, ] 
 PC_auditory
 ```
+
 
 
 ### 3.7.1.2 Somatosensory hand
@@ -774,10 +844,11 @@ names<-colnames(warp_1[28:52])
 smhand <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
+  out<-fit_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  smhand[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  smhand[[i]] <-list(out, df, test.emm, EF)
 }
 
 smhand2<-list()
@@ -786,11 +857,30 @@ for(i in seq(1, 24, by = 1)){
   df<-smhand[28:64][[i]][[2]]
   df$var<-names[i]
   smhand2[[i]] <-list(df)
-  }
-df_PChand<-bind_rows(smhand2)
-df_PChand$pFDR<-p.adjust(df_PChand$p.value, method = "BH")
-PC_hand<-df_PChand[df_PChand$pFDR <= 0.05, ] 
-PC_hand
+}
+
+smhand4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-smhand[28:64][[i]][[4]]
+  df$var<-names[i]
+  smhand4[[i]] <-list(df)
+}
+
+df_PCsmhand<-bind_rows(smhand2)
+EF_PCsmhand<-bind_rows(smhand4)
+
+df_PCsmhand$contrast<-as.factor(df_PCsmhand$contrast)
+EF_PCsmhand$contrast<-as.factor(EF_PCsmhand$contrast)
+df_PCsmhand<-cbind(df_PCsmhand, EF_PCsmhand)
+
+df_PCsmhand$pFDR<-p.adjust(df_PCsmhand$p.value, method = "BH")
+df_PCsmhand
+PC_smHand<-df_PCsmhand[df_PCsmhand$pFDR <= 0.05, ] 
+PC_smHand
+```
+
+```{r}
 #Working Memory (List Sorting)
 #Cognitive Function Composite score
 #Crystallized Cognition Composite score
@@ -836,7 +926,8 @@ for (i in seq(28, 52, by= 1)){
   out<-fit_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  smmouth[[i]] <-list(out, df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  smmouth[[i]] <-list(out, df, test.emm, EF)
 }
 
 smmouth2<-list()
@@ -845,11 +936,27 @@ for(i in seq(1, 24, by = 1)){
   df<-smmouth[28:64][[i]][[2]]
   df$var<-names[i]
   smmouth2[[i]] <-list(df)
-  }
-df_PCmouth<-bind_rows(smmouth2)
-df_PCmouth$pFDR<-p.adjust(df_PCmouth$p.value, method = "BH")
-PC_mouth<-df_PCmouth[df_PCmouth$pFDR <= 0.05, ] 
-PC_mouth
+}
+
+smmouth4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-smmouth[28:64][[i]][[4]]
+  df$var<-names[i]
+  smmouth4[[i]] <-list(df)
+}
+
+df_PCsmmouth<-bind_rows(smmouth2)
+EF_PCsmmouth<-bind_rows(smmouth4)
+
+df_PCsmmouth$contrast<-as.factor(df_PCsmmouth$contrast)
+EF_PCsmmouth$contrast<-as.factor(EF_PCsmmouth$contrast)
+df_PCsmmouth<-cbind(df_PCsmmouth, EF_PCsmmouth)
+
+df_PCsmmouth$pFDR<-p.adjust(df_PCsmmouth$p.value, method = "BH")
+df_PCsmmouth
+PC_smmouth<-df_PCsmmouth[df_PCsmmouth$pFDR <= 0.05, ] 
+PC_smmouth
 ```
 
 ```{r}
@@ -893,28 +1000,46 @@ colnames(warp_2)
 # z is the graph measures
 names<-colnames(warp_2[28:52])
 
-visualmod <- list()
+vis <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
   out<-fit_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  visualmod[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  vis[[i]] <-list(out, df, test.emm, EF)
 }
 
-visualmod2<-list()
+vis2<-list()
 for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-visualmod[28:64][[i]][[2]]
+  df<-vis[28:64][[i]][[2]]
   df$var<-names[i]
-  visualmod2[[i]] <-list(df)
-  }
+  vis2[[i]] <-list(df)
+}
 
-df_PCviz<-bind_rows(visualmod2)
-df_PCviz$pFDR<-p.adjust(df_PCviz$p.value, method = "BH")
-PC_visualmod<-df_PCviz[df_PCviz$pFDR <= 0.05, ] 
-PC_visualmod
+vis4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-vis[28:64][[i]][[4]]
+  df$var<-names[i]
+  vis4[[i]] <-list(df)
+}
 
+df_PCvis<-bind_rows(vis2)
+EF_PCvis<-bind_rows(vis4)
+
+df_PCvis$contrast<-as.factor(df_PCvis$contrast)
+EF_PCvis$contrast<-as.factor(EF_PCvis$contrast)
+df_PCvis<-cbind(df_PCvis, EF_PCvis)
+
+df_PCvis$pFDR<-p.adjust(df_PCvis$p.value, method = "BH")
+df_PCvis
+PC_vis<-df_PCvis[df_PCvis$pFDR <= 0.05, ] 
+PC_vis
+```
+
+```{r}
 # ListSort_AgeAdj
 # CogTotalComp_AgeAdj
 # DDisc_AUC_40K
@@ -954,28 +1079,46 @@ colnames(warp_2)
 # z is the graph measures
 names<-colnames(warp_2[28:52])
 
-sensorymod <- list()
+sensory <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
   out<-fit_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  sensorymod[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  sensory[[i]] <-list(out, df, test.emm, EF)
 }
 
-sensorymod2<-list()
+sensory2<-list()
 for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-sensorymod[28:64][[i]][[2]]
+  df<-sensory[28:64][[i]][[2]]
   df$var<-names[i]
-  sensorymod2[[i]] <-list(df)
-  }
-df_PCsen<-bind_rows(sensorymod2)
-df_PCsen$pFDR<-p.adjust(df_PCsen$p.value, method = "BH")
-PC_sensorymod<-df_PCsen[df_PCsen$pFDR <= 0.05, ] 
-PC_sensorymod
+  sensory2[[i]] <-list(df)
+}
 
+sensory4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-sensory[28:64][[i]][[4]]
+  df$var<-names[i]
+  sensory4[[i]] <-list(df)
+}
 
+df_PCsensory<-bind_rows(sensory2)
+EF_PCsensory<-bind_rows(sensory4)
+
+df_PCsensory$contrast<-as.factor(df_PCsensory$contrast)
+EF_PCsensory$contrast<-as.factor(EF_PCsensory$contrast)
+df_PCsensory<-cbind(df_PCsensory, EF_PCsensory)
+
+df_PCsensory$pFDR<-p.adjust(df_PCsensory$p.value, method = "BH")
+df_PCsensory
+PC_sensory<-df_PCsensory[df_PCsensory$pFDR <= 0.05, ] 
+PC_sensory
+```
+
+```{r}
 # Taste_AgeAdj
 # CogTotalComp_AgeAdj
 # DDisc_AUC_200
@@ -1015,28 +1158,46 @@ colnames(warp_3)
 # z is the graph measures
 names<-colnames(warp_3[28:52])
 
-visualmod <- list()
+vis <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
   out<-fit_function(x=warp_3[56], y = warp_3[i], z=warp_3[53], data = warp_3)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  visualmod[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  vis[[i]] <-list(out, df, test.emm, EF)
 }
 
-visualmod2<-list()
+vis2<-list()
 for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-visualmod[28:52][[i]][[2]]
+  df<-vis[28:64][[i]][[2]]
   df$var<-names[i]
-  visualmod2[[i]] <-list(df)
-  }
-df_Cenviz<-bind_rows(visualmod2)
-df_Cenviz$pFDR<-p.adjust(df_Cenviz$p.value, method = "BH")
-CEN_visualmod<-df_Cenviz[df_Cenviz$pFDR <= 0.05, ] 
-CEN_visualmod
+  vis2[[i]] <-list(df)
+}
 
+vis4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-vis[28:64][[i]][[4]]
+  df$var<-names[i]
+  vis4[[i]] <-list(df)
+}
 
+df_Cenvis<-bind_rows(vis2)
+EF_Cenvis<-bind_rows(vis4)
+
+df_Cenvis$contrast<-as.factor(df_Cenvis$contrast)
+EF_Cenvis$contrast<-as.factor(EF_Cenvis$contrast)
+df_Cenvis<-cbind(df_Cenvis, EF_Cenvis)
+
+df_Cenvis$pFDR<-p.adjust(df_Cenvis$p.value, method = "BH")
+df_Cenvis
+Cen_vis<-df_Cenvis[df_Cenvis$pFDR <= 0.05, ] 
+Cen_vis
+```
+
+```{r}
 #  ListSort_AgeAdj
 # CogTotalComp_AgeAdj
 # DDisc_AUC_200
@@ -1076,28 +1237,46 @@ colnames(warp_X)
 # z is the graph measures
 names<-colnames(warp_X[28:52])
 
-sensorymod <- list()
+sensory <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
   out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  sensorymod[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  sensory[[i]] <-list(out, df, test.emm, EF)
 }
 
-sensorymod2<-list()
+sensory2<-list()
 for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-sensorymod[28:52][[i]][[2]]
+  df<-sensory[28:64][[i]][[2]]
   df$var<-names[i]
-  sensorymod2[[i]] <-list(df)
-  }
-df_CCsen<-bind_rows(sensorymod2)
-df_CCsen$pFDR<-p.adjust(df_CCsen$p.value, method = "BH")
-CC_sensory<-df_CCsen[df_CCsen$pFDR <= 0.05, ] 
+  sensory2[[i]] <-list(df)
+}
+
+sensory4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-sensory[28:64][[i]][[4]]
+  df$var<-names[i]
+  sensory4[[i]] <-list(df)
+}
+
+df_CCsensory<-bind_rows(sensory2)
+EF_CCsensory<-bind_rows(sensory4)
+
+df_CCsensory$contrast<-as.factor(df_CCsensory$contrast)
+EF_CCsensory$contrast<-as.factor(EF_CCsensory$contrast)
+df_CCsensory<-cbind(df_CCsensory, EF_CCsensory)
+
+df_CCsensory$pFDR<-p.adjust(df_CCsensory$p.value, method = "BH")
+df_CCsensory
+CC_sensory<-df_CCsensory[df_CCsensory$pFDR <= 0.05, ] 
 CC_sensory
+```
 
-
+```{r}
 #  ListSort_AgeAdj
 # CogTotalComp_AgeAdj
 # DDisc_AUC_200
@@ -1137,28 +1316,46 @@ warp_X$subcortical<-as.factor(warp_X$subcortical)
 # z is the graph measures
 names<-colnames(warp_X[28:52])
 
-subcorticalmod <- list()
+subcortical <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
   out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
   test.emm <- emmeans(out, ~ x*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
-  subcorticalmod[[i]] <-list(out,df, test.emm)
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  subcortical[[i]] <-list(out, df, test.emm, EF)
 }
 
-subcorticalmod2<-list()
+subcortical2<-list()
 for(i in seq(1, 24, by = 1)){
   print(paste ("this is ",i))
-  df<-subcorticalmod[28:52][[i]][[2]]
+  df<-subcortical[28:64][[i]][[2]]
   df$var<-names[i]
-  subcorticalmod2[[i]] <-list(df)
-  }
-df_CCsub<-bind_rows(subcorticalmod2)
-df_CCsub$pFDR<-p.adjust(df_CCsub$p.value, method = "BH")
-CC_subcortical<-df_CCsub[df_CCsub$pFDR <= 0.05, ] 
+  subcortical2[[i]] <-list(df)
+}
+
+subcortical4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-subcortical[28:64][[i]][[4]]
+  df$var<-names[i]
+  subcortical4[[i]] <-list(df)
+}
+
+df_CCsubcortical<-bind_rows(subcortical2)
+EF_CCsubcortical<-bind_rows(subcortical4)
+
+df_CCsubcortical$contrast<-as.factor(df_CCsubcortical$contrast)
+EF_CCsubcortical$contrast<-as.factor(EF_CCsubcortical$contrast)
+df_CCsubcortical<-cbind(df_CCsubcortical, EF_CCsubcortical)
+
+df_CCsubcortical$pFDR<-p.adjust(df_CCsubcortical$p.value, method = "BH")
+df_CCsubcortical
+CC_subcortical<-df_CCsubcortical[df_CCsubcortical$pFDR <= 0.05, ] 
 CC_subcortical
+```
 
-
+```{r}
 #  ListSort_AgeAdj
 # CogTotalComp_AgeAdj
 # DDisc_AUC_200
@@ -1179,6 +1376,9 @@ ddsen<-ggplot(warp_X, aes(x=clustering, y=DDisc_AUC_40K , color=subcortical)) +
 ggarrange(tastesen, cogsen, ddsen,
           ncol = 2, nrow = 2)
 ```
+```{r}
+colnames(CC_subcortical)
+```
 
 ###  Combine the tables
 Keep the contrast, t-ratio, SE, var, pFDR, metric, area
@@ -1186,8 +1386,8 @@ Round to 2 decimal places
 Add area and type 
 ```{r}
 df_func<-function(df, m, a){
-  keep<-c("metric","area","Contrast","Var","t.ratio","SE","pFDR")
-  round2<-c("SE","t.ratio")
+  keep<-c("metric","area","Contrast","Var","effect.size","SE","pFDR")
+  round2<-c("effect.size","SE","t.ratio")
   round3<-c("pFDR")
   df$metric<-sprintf("%s", m)
   df$area<- sprintf("%s", a)
@@ -1242,15 +1442,23 @@ df_func<-function(df, m, a){
 }
 ```
 
+```{r}
+colnames(PC_auditory)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
+colnames(PC_smHand)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
+colnames(PC_smmouth)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
+colnames(Cen_vis)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
+colnames(CC_subcortical)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
+
+```
 
 
 
 ```{r}
 CC_sensory2<-df_func(df = CC_sensory, m = "clustering coefficient", a = "sensory module")
 PC_auditory2<-df_func(df = PC_auditory, m = "participation coefficient", a ="auditory functional network")
-PC_hand2<-df_func(df = PC_hand, m = "participation coefficient", a = "somatosensory hand functional network")
-PC_mouth2<-df_func(df = PC_mouth, m = "participation coefficient",  a = "somatosensory mouth functional network")
-CEN_visualmod2<-df_func(df = CEN_visualmod, m = "betweenness centrality", a = "visual module")
+PC_hand2<-df_func(df = PC_smHand, m = "participation coefficient", a = "somatosensory hand functional network")
+PC_mouth2<-df_func(df = PC_smmouth, m = "participation coefficient",  a = "somatosensory mouth functional network")
+CEN_visualmod2<-df_func(df = Cen_vis, m = "betweenness centrality", a = "visual module")
 CC_subcortical2<-df_func(df = CC_subcortical, m = "clustering coefficient", a = "subcortical module")
 ```
 
@@ -1258,7 +1466,7 @@ CC_subcortical2<-df_func(df = CC_subcortical, m = "clustering coefficient", a = 
 
 ```{r}
 all_df<-rbind(CC_subcortical2, CC_sensory2, PC_auditory2, PC_hand2, PC_mouth2, CEN_visualmod2)
-colz<-c("Metric","Area", "Contrast", "Behavioral variable", "t-ratio","SE","pFDR")
+colz<-c("Metric","Area", "Contrast", "Behavioral variable", "effect.size","SE","pFDR")
 colnames(all_df)<-colz
 all_df$`Behavioral variable`<-as.factor(all_df$`Behavioral variable`)
 all_df
@@ -1269,10 +1477,218 @@ all_df
 write.table(all_df, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/post_hoc.csv", sep=",", row.names = F)
 ```
 
+## Testing edges 
+```{r}
+mod_edge_df$source<-as.factor(mod_edge_df$source)
+mod_edge_df$target<-as.factor(mod_edge_df$target)
 
+
+edf<-subset(mod_edge_df, mod_edge_df$source != 7)
+edf<-subset(edf, edf$source != 8)
+edf<-subset(edf, edf$target != 7)
+edf<-subset(edf, edf$target != 8)
+
+edf$source<-factor(edf$source)
+edf$target<-factor(edf$target)
+
+summary(edf$source)
+summary(edf$target)
+```
+
+```{r}
+warp_edges <- transform(edf, mods = interaction(group, source, target))
+head(warp_edges)
+# no.2.5 vs. ov.2.6 vs. ob.4.6
+warp_edges$newvar <- NA
+warp_edges[warp_edges$mods == 'no.2.5', "newvar"] <- 'aBMI'
+warp_edges[warp_edges$mods == 'ov.2.6', "newvar"] <- 'hBMI'
+warp_edges[warp_edges$mods == 'ob.4.6', "newvar"] <- 'vhBMI'
+
+summary(as.factor(warp_edges$newvar))
+head(warp_edges)
+warp_edges$newvar<-as.factor(warp_edges$newvar)
+levels(warp_edges$newvar)
+warp_spec<-warp_edges[complete.cases(warp_edges), ]
+head(warp_spec)
+warp_spec$mods<-factor(warp_spec$mods)
+levels(warp_spec$mods)
+```
+```{r}
+head(edge_df)
+head(edf)
+head(mod_edge_df)
+colnames(data)
+data<-as_tibble(data)
+colnames(data)
+head(data)
+# Compute the mean of multiple columns
+data[29:51] <- sapply(data[29:51], as.factor)
+
+data %<>%
+       group_by(group) %>%
+       mutate_at(vars(data[,29:51]), numeric)
+       
+summarise_at(vars(data[,29:51]), list(mean=mean, sd=sd))
+
+
+data %>%
+  group_by(group) %>%
+  summarise(across("DDisc_SV_1yr_200":"Taste_AgeAdj", mean, na.rm= TRUE))
+```
 
 
 ```{r}
+warp_spec <- transform(warp_spec, mods = interaction(group, source, target))
+warp_spec$mods<-factor(warp_spec$mods)
+levels(warp_spec$mods)
+head(warp_spec)
+zW1.gls <- gls(z_weight ~ newvar, data = warp_spec)
+zW1.emm <- emmeans(zW1.gls, "newvar")
+
+contrast(zW1.emm, "pairwise",  adjust = "fdr")
+eff_size(zW1.emm, sigma = sigma(zW1.gls), edf = 340, method = "pairwise")
+
+violin(warp_spec, warp_spec$newvar, warp_spec$z_weight)
+```
+
+
+```{r}
+warp_edges <- transform(edf, mods = interaction(group, source, target))
+head(warp_edges)
+levels(warp_edges$mods)
+zW.gls <- gls(z_weight ~ mods, data = warp_edges)
+zW.emm <- emmeans(zW.gls, "mods")
+zW.fac <- update(zW.emm, levels = list(
+                group = c("no", "ov", "ob"), 
+                edge = c("0.1","0.2","0.3","0.4", "0.5", "0.6", 
+                         "1.2","1.3","1.4","1.5","1.6",
+                         "2.3","2.4","2.5","2.6",
+                         "3.4","3.5","3.6",
+                         "4.5","4.6",
+                         "5.6")))
+total <- contrast(zW.fac, "pairwise", by = "edge", adjust = "fdr")
+total<-data.frame(total)
+keep<-c("contrast", "edge", "p.value")
+total<-total[keep]
+total_eff<-eff_size(zW.fac, sigma = sigma(zW.gls), edf = 7140, method = "pairwise", by = "edge")
+total_eff<-data.frame(total_eff)
+head(total_eff)
+kepp<-c("contrast", "edge", "effect.size" ,"SE")
+total_eff<-total_eff[kepp]
+total_edge<-cbind(total, total_eff)
+head(total_edge)
+```
+
+```{r}
+vars<-c("contrast", "edge","effect.size ","SE", "p.value")
+r2<-c("effect.size","SE")
+r3<-c("p.value")
+
+total_edge<-total_edge[vars]
+total_edge[r2]<-round(total_edge[r2], 2)
+total_edge[r3]<-round(total_edge[r3], 3)
+
+levels(total_edge$contrast)
+total_edge$Contrast <- NA
+total_edge[total_edge$contrast == "no - ov", "Contrast"] <- 'aBMI vs. hBMI'
+total_edge[total_edge$contrast == "no - ob", "Contrast"] <- 'aBMI vs. vhBMI'
+total_edge[total_edge$contrast == "ov - ob", "Contrast"] <- 'hBMI vs. vhBMI'
+keep<-c("edge","Contrast","effect.size","SE", "p.value")   
+total_edge<-total_edge[keep]
+head(total_edge)
+write.table(total_edge, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/edges_table.csv", sep=",", row.names = F)
+```
+
+### Post hoc edges
+```{r}
+warp_edges <- transform(edf, mods = interaction(group, source, target))
+head(warp_edges)
+# no.2.5 vs. ov.2.6 vs. ob.4.6
+warp_edges$newvar <- NA
+warp_edges[warp_edges$mods == 'no.2.5', "newvar"] <- 'aBMI'
+warp_edges[warp_edges$mods == 'ov.2.6', "newvar"] <- 'hBMI'
+warp_edges[warp_edges$mods == 'ob.4.6', "newvar"] <- 'vhBMI'
+
+warp_edges$newvar<-as.factor(warp_edges$newvar)
+warp_spec<-warp_edges[complete.cases(warp_edges), ]
+warp_spec$mods<-factor(warp_spec$mods)
+```
+
+
+warp_X <- transform(module_df, mods = interaction(group, module))
+levels(warp_X$mods)
+warp_X$subcortical <- NA
+warp_X[warp_X$mods == "no.5", "subcortical"] <- 'aBMI5'
+warp_X[warp_X$mods == "ov.6", "subcortical"] <- 'hBMI6'
+warp_X[warp_X$mods == "ob.6", "subcortical"] <- 'vhBMI6'
+colnames(warp_X)
+warp_X$subcortical<-as.factor(warp_X$subcortical)
+
+
+```{r}
+# y is behavioral measure
+# x is the group
+# z is the graph measures
+names<-colnames(warp_spec[28:52])
+
+subcortical <- list()
+for (i in seq(28, 52, by= 1)){
+  print(paste("start", i))
+  out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
+  test.emm <- emmeans(out, ~ x*z)
+  df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
+  EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+  subcortical[[i]] <-list(out, df, test.emm, EF)
+}
+
+subcortical2<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-subcortical[28:64][[i]][[2]]
+  df$var<-names[i]
+  subcortical2[[i]] <-list(df)
+}
+
+subcortical4<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-subcortical[28:64][[i]][[4]]
+  df$var<-names[i]
+  subcortical4[[i]] <-list(df)
+}
+
+df_CCsubcortical<-bind_rows(subcortical2)
+EF_CCsubcortical<-bind_rows(subcortical4)
+
+df_CCsubcortical$contrast<-as.factor(df_CCsubcortical$contrast)
+EF_CCsubcortical$contrast<-as.factor(EF_CCsubcortical$contrast)
+df_CCsubcortical<-cbind(df_CCsubcortical, EF_CCsubcortical)
+
+df_CCsubcortical$pFDR<-p.adjust(df_CCsubcortical$p.value, method = "BH")
+df_CCsubcortical
+CC_subcortical<-df_CCsubcortical[df_CCsubcortical$pFDR <= 0.05, ] 
+CC_subcortical
+```
+
+```{r}
 save.image("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/HCPcheck.RData")
+```
+
+```{r}
+unique(no$subject)
+```
+```{r}
+no<-subset(data, data$group == "no")
+no$subject<-factor(no$subject)
+unique(no$subject) #156
+no$group<-factor(no$group)
+module2_no<-subset(no, no$modules == "2")
+no$modules<-factor(no$modules)
+colnames(no)
+no_mod2<-data.frame(summary(no$IC))
+head(no_mod2)
+156*.9
+setDT(no_mod2, keep.rownames = TRUE)[]
+no_mod2[no_mod2$summary.no.IC. > 140]
 ```
 
