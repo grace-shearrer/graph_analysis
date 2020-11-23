@@ -45,6 +45,7 @@ for group, dat in save_dict['NR'].items():
 sub_comm_edge_df=pd.concat(list(tmp_dict.values()))
 sub_comm_edge_df.to_csv(os.path.join(basepath,'tmp','sub_comm_edge_data.csv'), sep=',')
 an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict['NR'],'10_subedge_dict')
+
 #making a dataframe
 subedge_dict = save_dict['NR']
 _dfs=[]

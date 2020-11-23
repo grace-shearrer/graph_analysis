@@ -2,7 +2,9 @@
 title: "HCP_check"
 author: "GShearrer"
 date: "9/17/2020"
-output: html_document
+output: 
+  html_document: 
+    fig_width: 8
 ---
 
 This document is to double check the results from the HCP_graph document
@@ -222,6 +224,42 @@ balloonplot(table(dat$group, dat$race_eth), main ="Racial/Ethnic Frequencies", x
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
 ```
 
+
+# General balloon plots
+```{r}
+x = 1
+
+no_<-subset(graph_df, graph_df$group == "normal")
+
+balloonplot(table(no_$module, no_$area), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+
+no_2<-subset(no_, no_$module == 2)
+balloonplot(table(no_2$node_type, no_2$area), main ="Module Frequencies per functional network average BMI sensory", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+
+no_5<-subset(no_, no_$module == 5)
+balloonplot(table(no_5$node_type, no_5$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+
+ov_<-subset(graph_df, graph_df$group == "overweight")
+balloonplot(table(ov_$module, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
+ov_2<-subset(ov_, ov_$module == 2)
+balloonplot(table(ov_2$node_type, ov_2$area), main ="Module Frequencies per sensory high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
+ov_6<-subset(ov_, ov_$module == 6)
+balloonplot(table(ov_6$node_type, ov_6$area), main ="Module Frequencies per subcortical high BMI module 5", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+
+
+ob_<-subset(graph_df, graph_df$group == "obese")
+balloonplot(table(ob_$module, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+
+ob_4<-subset(ob_, ob_$module == 4)
+balloonplot(table(ob_4$node_type, ob_4$area), main ="Module Frequencies per sensory very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+
+ob_6<-subset(ob_, ob_$module == 6)
+balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per subcortical very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+```
+
+
 # Models
 ```{r}
 #took out FC
@@ -258,6 +296,26 @@ warp_mod <- transform(mdf, mods = interaction(group, module))
 # 3.3 Clustering coefficient
 ## 3.3.1 Nodal
 After correcting for multiple comparisons (n=300), there were no differences in clustering coefficient between the BMI groups. Using a less stringent correction for multiple comparison (n=3 per node), in node 22 the aBMI group exhibited higher clustering coefficient compared to the hBMI group (d = 0.64, SE = 0.22, sigma = 0.07, pFDR3 = 0.01). In node 73, the aBMI group has higher clustering coefficient compared to the vhBMI group (d = 0.49, SE = 0.19 pFDR3= 0.01), and the hBMI group showed increased clustering coefficient compared the the vhBMI group (d = 0.63, SE= 0.19, sigma = 0.07, pFDR3= 0.004). 
+```{r}
+baseCC<-lm(clustering ~ group+IC+Gender+race_eth+HbA1C, data = data, na.action = na.omit)
+confint(baseCC)
+install.packages("sjstats")
+library(sjstats)
+anova_stats(anova(baseCC))
+CC.emm<-emmeans(baseCC, "group")
+contrast(CC.emm, "pairwise", adjust = "fdr")
+eff_size(CC.emm, sigma = sigma(baseCC), edf = 16807)
+
+base_CCp<-ggplot(data, aes(group, clustering))+
+  geom_violin(aes(fill = group), draw_quantiles = c(0.25, 0.5, 0.75))+
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+base_CCp
+```
+
 
 ```{r}
 CC.IC.gls <- gls(clustering ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
@@ -282,11 +340,27 @@ eff_size(CC.IC.fac, sigma = sigma(CC.IC.gls), edf = 16609, by = "area")
 
 ```{r}
 IC22<-subset(warp, warp$IC == "IC_22")
-IC22p<-violin(IC22, IC22$mods, IC22$clustering)
 IC73<-subset(warp, warp$IC == "IC_73")
-IC73p<-violin(IC73, IC73$mods, IC73$clustering)
-ggarrange(IC22p, IC73p, 
-          labels = c("IC_22", "IC_73"),
+
+p73 <-ggplot(IC73, aes(mods, clustering))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+p22 <-ggplot(IC22, aes(mods, clustering))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+
+ggarrange(p22, p73, 
+          labels = c("node 22: middle temporal gyrus", "node 73: cerebellum"),
           ncol = 2)
 ```
 # 3.3.2 Functional Networks
@@ -315,6 +389,10 @@ mdf<-subset(graph_df, graph_df$module != 7)
 mdf<-subset(mdf, mdf$module != 8)
 mdf$module<-factor(mdf$module)
 ```
+
+
+
+
 ### visual 
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -331,6 +409,7 @@ contrast(M.CC0.emm, "pairwise",  adjust = "fdr")
 pwpm(M.CC0.emm, adjust = "fdr")
 eff_size(M.CC0.emm, sigma = sigma(M.CC0.gls), edf = 21)
 ```
+
 ### Sensory 
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -349,11 +428,39 @@ pwpm(Msen.CC0.emm, adjust = "fdr")
 eff_size(Msen.CC0.emm, sigma = sigma(Msen.CC0.gls), edf = 21)
 ```
 
+
+### submod check
+```{r}
+warp_mod <- transform(mdf, mods = interaction(group, module))
+colnames(warp_mod)
+# no.2.5 vs. ov.2.6 vs. ob.4.6
+warp_mod$sensory <- NA
+warp_mod[warp_mod$mods == 'normal.2', "sensory"] <- 'aBMI2'
+warp_mod[warp_mod$mods == 'overweight.2', "sensory"] <- 'hBMI2'
+warp_mod[warp_mod$mods == 'obese.4', "sensory"] <- 'vhBMI4'
+warp_mod$sensory<-factor(warp_mod$sensory)
+warp_mod$sub_modules<-factor(warp_mod$sub_modules)
+warp_mod$IC<-factor(warp_mod$IC)
+warp_smod<-warp_mod[complete.cases(warp_mod$sensory),]
+warp_smod[] <- lapply(warp_smod, function(x) if(is.factor(x)) factor(x) else x)
+
+balloonplot(table(warp_smod$area, warp_smod$sensory), main =" ", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
+table(warp_smod$IC, warp_smod$sub_modules, warp_smod$sensory)
+```
+
 ```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$sensory), ] 
-SenCCp<-violin(warp_mod, warp_mod$sensory, warp_mod$clustering)
-SenCCp
+pSen <-ggplot(warp_mod, aes(sensory, clustering))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+pSen
 ```
+
 ### DMN
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -368,6 +475,7 @@ CC0.emm <- emmeans(CC0.gls, "DMN")
 
 contrast(CC0.emm, "pairwise",  adjust = "fdr")
 ```
+
 ### subcortical
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -389,9 +497,24 @@ eff_size(Msub.CC0.emm, sigma = sigma(Msub.CC0.gls), edf = 21)
 
 ```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$subcort), ] 
-SubCCp<-violin(warp_mod, warp_mod$subcort, warp_mod$clustering)
-SubCCp
+
+pSub <-ggplot(warp_mod, aes(subcort, clustering))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
 ```
+
+```{r}
+modCC<-ggarrange(pSen, pSub, 
+          labels = c("Sensory module", "Subcortical module"),
+          ncol = 2)
+modCC
+```
+
 ### other
 ```{r}
 warp_mod <- transform(mdf, mods = interaction(group, module))
@@ -415,6 +538,24 @@ In node 41, the aBMI had higher centrality compared to the hBMI (d = 0.15, SE = 
 In node 50, the hBMI group exhibited lower centrality compared to both the aBMI (d = 0.15, SE = 0.05, sigma = 0.04, pFDR3= 0.01) and the vhBMI (d = -0.12, SE=0.03, sigma = 0.04, pFDR3= 0.08) groups. 
 In node 86, the vhBMI group exhibited decreased centrality compared to both the aBMI (d = 0.15, SE = 0.06, sigma = 0.04, pFDR3= 0.02) and the hBMI (d = 0.19, SE = 0.06, sigma = 0.04, pFDR3= 0.01) groups. 
 ```{r}
+baseCen<-lm(centrality_sq ~ group+IC+Gender+race_eth+HbA1C, data = data, na.action = na.omit)
+anova(baseCen)
+Cen.emm<-emmeans(baseCen, "group")
+contrast(Cen.emm, "pairwise", adjust = "fdr")
+eff_size(Cen.emm, sigma = sigma(baseCen), edf = 16807)
+
+base_Cenp<-ggplot(data, aes(group, centrality_sq))+
+  geom_violin(aes(fill = group), draw_quantiles = c(0.25, 0.5, 0.75))+
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+base_Cenp
+```
+
+
+```{r}
 IC.Cen.gls <- gls(centrality_sq ~ mods+Gender+race_eth+HbA1C, data = warp, na.action = na.omit)
 IC.Cen.emm <- emmeans(IC.Cen.gls, "mods")
 IC.Cen.fac <- update(IC.Cen.emm, levels = list(
@@ -436,22 +577,69 @@ pwpm(IC.Cen.fac, adjust = "fdr", by = "area")
 eff_size(IC.Cen.fac, sigma = sigma(Msub.CC0.gls), edf = 16609, by = "area")
 ```
 
-```{r}
-#node13, node18, node41, node50, node86
-IC13<-subset(warp, warp$IC == "IC_13")
-IC13p<-violin(IC13, IC13$mods, IC13$centrality)
-IC17<-subset(warp, warp$IC == "IC_17")
-IC17p<-violin(IC17, IC17$mods, IC17$centrality)
-IC41<-subset(warp, warp$IC == "IC_41")
-IC41p<-violin(IC41, IC41$mods, IC41$centrality)
-IC50<-subset(warp, warp$IC == "IC_50")
-IC50p<-violin(IC50, IC50$mods, IC50$centrality)
-IC86<-subset(warp, warp$IC == "IC_86")
-IC86p<-violin(IC86, IC86$mods, IC86$centrality)
 
-ggarrange(IC13p, IC17p, IC41p, IC50p, IC86p,
-          ncol = 2, nrows = 3)
+
+```{r}
+IC13<-subset(warp, warp$IC == "IC_13")
+pIC13 <-ggplot(IC13, aes(mods, centrality))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+pIC13
+IC17<-subset(warp, warp$IC == "IC_17")
+pIC17 <-ggplot(IC17, aes(mods, centrality))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+pIC17
+IC41<-subset(warp, warp$IC == "IC_41")
+pIC41 <-ggplot(IC41, aes(mods, centrality))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+pIC41
+IC50<-subset(warp, warp$IC == "IC_50")
+pIC50 <-ggplot(IC50, aes(mods, centrality))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+pIC50
+
+IC86<-subset(warp, warp$IC == "IC_86")
+pIC86 <-ggplot(IC86, aes(mods, centrality))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+pIC86
+
+pCen1<-ggarrange(pIC13, pIC17,
+          labels = c("FrontoParietal", "DAN"),
+          ncol = 2)
+
+pCen2<-ggarrange(pIC41, pIC50,
+          labels = c("Cerebellum","Cerebellum"),
+          ncol = 2)
+
+pCen3<-ggarrange(pIC86,
+          labels = c("Thalamus"),
+          ncol = 1)
 ```
+
 
 ## 3.6.2 Functional Networks
 No differences in any functional networks were seen between the BMI groups.
@@ -489,8 +677,16 @@ eff_size(M.Cen0.emm, sigma = sigma(M.Cen0.gls), edf = 21)
 
 ```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
-VizCenp<-violin(warp_mod, warp_mod$visual, warp_mod$centrality)
+
+VizCenp<-ggplot(warp_mod, aes(visual, centrality))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Clustering Coefficient")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
 VizCenp
+
 ```
 ### Sensory 
 ```{r}
@@ -555,6 +751,19 @@ contrast(Cen0.emm, "pairwise",  adjust = "fdr")
 # 3.4 Participation coefficient
 ## 3.4.1 Nodal
 No differences between groups by nodal participation coefficient were observed with the more stringent (n=300) correction. Using the less stringent (n=3) correction for multiple comparisons, in node 13  the hBMI group exhibited higher participation coefficient compared to both the aBMI (d = -0.48, SE = 0.20, sigma = 0.31 , pFDR3= 0.03) and the vhBMI groups (d = 0.74, SE = 0.26, sigma = 0.31, pFDR3= 0.01). In area 32, the hBMI again showed increased participation coefficient compared to the aBMI group (d = -0.39, SE =0.16, sigma = 0.31 pFDR3= 0.04). 
+```{r}
+basePC<-lm(PC_log ~ group+IC+Gender+race_eth+HbA1C, data = data, na.action = na.omit)
+anova(basePC)
+anova_stats(anova(basePC))
+summary(basePC)
+PC.emm<-emmeans(basePC, "group")
+contrast(PC.emm, "pairwise", adjust = 'fdr')
+eff_size(PC.emm, sigma = sigma(basePC), edf = 16807)
+
+base_PCp<-ggplot(data, aes(group, PC_log))+
+  geom_violin(aes(fill = group), draw_quantiles = c(0.25, 0.5, 0.75))
+base_PCp
+```
 
 ```{r}
 # colnames(warp)
@@ -585,12 +794,27 @@ eff_size(IC.PC.fac, sigma = sigma(IC.PC.gls), edf = 16609, by ="area")
 warp$PC_z<-scale(warp$PC)
 
 IC13<-subset(warp, warp$IC == "IC_13")
-IC13p<-violin(IC13, IC13$mods, IC13$PC_z)
-IC32<-subset(warp, warp$IC == "IC_32")
-IC32p<-violin(IC32, IC32$mods, IC32$PC_z)
+pIC13<-ggplot(IC13, aes(mods, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+# pIC13
 
-ggarrange(IC13p, IC32p,
-          ncol = 2)
+IC32<-subset(warp, warp$IC == "IC_32")
+pIC32<-ggplot(IC32, aes(mods, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+# pIC32
+PC_nodes<-ggarrange(pIC13, pIC32,
+                    labels = c("DAN", "FrontoParietal"),
+                    ncol = 2)
 ```
 ## 3.4.2 Functional Networks
 Within the auditory functional network the vhBMI group showed decreased participation coefficient compared to both the aBMI (d = 3.04, SE = 1.42, sigma = 0.13, pFDR= 0.05) and the hBMI groups (d =3.07, SE = 1.42, sigma = 0.13, pFDR= 0.05). The participation coefficient in the somatosensory hand network for the vhBMI was lower compared to the aBMI (d = 2.40, SE = 0.70, sigma = 0.13, pFDR= 0.002) and the hBMI (d = 2.33, SE = 0.71, sigma = 0.13, pFDR= 0.002) groups. This pattern was also observed in the somatosensory mouth network, with the vhBMI showing a lower participation coefficient compared to the aBMI group (d = 2.60, SE = 1.01, sigma = 0.13, pFDR= 0.01) and the hBMI (d = 2.61, SE = 1.01, sigma = 0.13, pFDR= 0.01) group.  
@@ -608,6 +832,9 @@ F.PC.fac <- update(F.PC.emm, levels = list(
 contrast(F.PC.fac, "pairwise", by = "area", adjust = "fdr")
 
 eff_size(F.PC.fac, sigma = sigma(F.PC.gls), edf = 246, by ="area")
+
+aud<-subset(warp_func, warp_func$area == "Auditory")
+summary(aud$IC)
 ```
 
 ```{r}
@@ -616,8 +843,16 @@ warp_func$PC_z<-scale(warp_func$PC)
 library(psych)
 aud<-subset(warp_func, warp_func$area == "Auditory")
 aud<-aud[complete.cases(aud$area), ] 
-aud$mods<-factor(aud$mods)
-describeBy(aud$PC, aud$mods)
+
+pAud<-ggplot(aud, aes(mods, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+pAud
 
 smH<-subset(warp_func, warp_func$area ==  "Smhand")
 smH$mods<-factor(smH$mods)
@@ -625,10 +860,29 @@ head(smH)
 smHp<-violin(smH, smH$mods, smH$PC_z)
 smHp
 
+pHand<-ggplot(smH, aes(mods, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+pHand
+
 smM<-subset(warp_func, warp_func$area ==  "Smmouth")
 smM$mods<-factor(smM$mods)
 smMp<-violin(smM, smM$mods, smM$PC_z)
-describeBy(smM$PC_sq, smM$mods)
+pMouth<-ggplot(smM, aes(mods, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
+pMouth
+
 ```
 
 ## 3.4.3 Module
@@ -658,6 +912,14 @@ warp_mod$PC_z<-scale(warp_mod$PC)
 warp_mod<-warp_mod[complete.cases(warp_mod$visual), ] 
 VizPCp<-violin(warp_mod, warp_mod$visual, warp_mod$PC_z)
 VizPCp
+
+VizPCp<-ggplot(warp_mod, aes(visual, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
 ```
 ### Sensory 
 ```{r}
@@ -678,8 +940,21 @@ eff_size(Msen.PC0.emm, sigma = sigma(Msen.PC0.gls), edf = 21)
 
 ```{r}
 warp_mod<-warp_mod[complete.cases(warp_mod$sensory), ] 
-SenPCp<-violin(warp_mod, warp_mod$sensory, warp_mod$PC_z)
+head(warp_mod)
+
+SenPCp<-ggplot(warp_mod, aes(sensory, PC_z))+
+  geom_violin(aes(fill = mods), draw_quantiles = c(0.25, 0.5, 0.75))+ 
+  geom_jitter(height = 0, width = 0.1)+ 
+  scale_fill_manual(values = cbPalette)+
+  scale_y_continuous(name="Participation Coefficient (z-score)")+theme_classic()+
+  theme(legend.position = "none")+
+  scale_x_discrete(labels = c('aBMI','hBMI','vhBMI'))
+
 SenPCp
+
+PC_mod<-ggarrange(SenPCp, VizPCp,
+          labels = c("Sensory", "Visual"),
+                    ncol = 2)
 ```
 ### DMN
 ```{r}
@@ -759,10 +1034,23 @@ fit_function<-function(x,y,z,data){
   fit<-lm(y~z*x+Age_c+race_eth+Gender, data=data, na.action = na.omit)#
   return(fit)
 }
+
+library(splines)
+
+spline_function<-function(x,y,z,data){
+  x<-unlist(x)
+  y <- unlist(y)
+  z<-unlist(z)
+  fit<-lm(y~ns(z, df =3)*x+Age_c+race_eth+Gender, data=data, na.action = na.omit)#
+  return(fit)
+}
 ```
-## By funtional network 
-## 3.7.1 Participation coeff
-### 3.7.1.1 Auditory
+
+modns <- lm(y ~ ns(x, df = 4))
+plot(x, y)
+lines(x, predict(modns))
+## Participation coeff
+### Auditory
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
@@ -775,6 +1063,7 @@ warp_1[warp_1$mods == 'ob.Auditory', "auditory"] <- 'vhBMIauditory'
 colnames(warp_1)
 ```
 
+
 ```{r}
 # y is behavioral measure
 # x is the group
@@ -784,8 +1073,8 @@ names<-colnames(warp_1[28:52])
 aud <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
+  test.emm <- emmeans(out, ~ ns(x, df =3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   aud[[i]] <-list(out, df, test.emm, EF)
@@ -821,8 +1110,27 @@ PC_auditory
 ```
 
 
+```{r}
+warp_1<-warp_1[complete.cases(warp_1$auditory), ] 
 
-### 3.7.1.2 Somatosensory hand
+tast_aud<-ggplot(warp_1, aes(x=PC_z, y=Taste_AgeAdj, color=auditory)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+tast_aud
+
+DD40_aud<-ggplot(warp_1, aes(x=PC_z, y=DDisc_AUC_40K, color=auditory)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+DD40_aud
+
+DD200_aud<-ggplot(warp_1, aes(x=PC_z, y=DDisc_AUC_200, color=auditory)) +
+    geom_point(shape=1, alpha = 0.25) +    
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+DD200_aud
+ggarrange(DD200_aud, DD40_aud, ncol = 2)
+```
+
+### somatosensory hand
 ```{r}
 # View(module_df)
 warp_1 <- transform(module_df, mods = interaction(group, area))
@@ -831,7 +1139,6 @@ warp_1$Smhand <- NA
 warp_1[warp_1$mods == 'no.Smhand', "Smhand"] <- 'aBMISmhand'
 warp_1[warp_1$mods == 'ov.Smhand', "Smhand"] <- 'hBMISmhand'
 warp_1[warp_1$mods == 'ob.Smhand', "Smhand"] <- 'vhBMISmhand'
-colnames(warp_1)
 ```
 
 
@@ -844,8 +1151,8 @@ names<-colnames(warp_1[28:52])
 smhand <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_1[57], y = warp_1[i], z=warp_1[52], data = warp_1)
+  test.emm <- emmeans(out, ~ ns(x, df = 3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   smhand[[i]] <-list(out, df, test.emm, EF)
@@ -875,7 +1182,6 @@ EF_PCsmhand$contrast<-as.factor(EF_PCsmhand$contrast)
 df_PCsmhand<-cbind(df_PCsmhand, EF_PCsmhand)
 
 df_PCsmhand$pFDR<-p.adjust(df_PCsmhand$p.value, method = "BH")
-df_PCsmhand
 PC_smHand<-df_PCsmhand[df_PCsmhand$pFDR <= 0.05, ] 
 PC_smHand
 ```
@@ -884,12 +1190,14 @@ PC_smHand
 #Working Memory (List Sorting)
 #Cognitive Function Composite score
 #Crystallized Cognition Composite score
+warp_1$PC_z<-scale(warp_1$PC)
 warp_1<-warp_1[complete.cases(warp_1$Smhand), ] 
 
-dex<-ggplot(warp_1, aes(x=PC_z, y=Dexterity_AgeAdj, color=Smhand)) +
+PChand_DDisc_AUC_200<-ggplot(warp_1, aes(x=PC_z, y=DDisc_AUC_200, color=Smhand)) +
     geom_point(shape=1, alpha = 0.25) +    
+    ylim(-3,3)+
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
+dex
 CFC<-ggplot(warp_1, aes(x=PC_z, y=CogTotalComp_AgeAdj, color=Smhand)) +
     geom_point(shape=1, alpha = 0.25) +    
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
@@ -897,7 +1205,7 @@ CFC<-ggplot(warp_1, aes(x=PC_z, y=CogTotalComp_AgeAdj, color=Smhand)) +
 Crystal<-ggplot(warp_1, aes(x=PC_z, y=CogCrystalComp_AgeAdj, color=Smhand)) +
     geom_point(shape=1, alpha = 0.25) +    
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
+Crystal
 ggarrange(dex, CFC, Crystal,
           ncol = 2, nrow = 2)
 ```
@@ -923,8 +1231,8 @@ names<-colnames(warp_1[28:52])
 smmouth <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_1[56], y = warp_1[i], z=warp_1[52], data = warp_1)
+  test.emm <- emmeans(out, ~ ns(x, df = 3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   smmouth[[i]] <-list(out, df, test.emm, EF)
@@ -966,13 +1274,15 @@ PC_smmouth
 warp_1$PC_z<-scale(warp_1$PC)
 warp_1<-warp_1[complete.cases(warp_1$Smmouth), ] 
 
-taste<-ggplot(warp_1, aes(x=PC_z, y=Taste_AgeAdj, color=Smmouth)) +
+taste<-ggplot(warp_1, aes(x=PC_z, y=Endurance_AgeAdj, color=Smmouth)) +
     geom_point(shape=1, alpha = 0.25) +    
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+taste
 
 WM<-ggplot(warp_1, aes(x=PC_z, y=ListSort_AgeAdj, color=Smmouth)) +
     geom_point(shape=1, alpha = 0.25) +    
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+WM
 
 cog<-ggplot(warp_1, aes(x=PC_z, y=CogTotalComp_AgeAdj, color=Smmouth)) +
     geom_point(shape=1, alpha = 0.25) +    
@@ -982,7 +1292,6 @@ ggarrange(taste, WM, cog,
           ncol = 2, nrow = 2)
 ```
 
-### Participation coeff
 #### visual
 ```{r}
 warp_2 <- transform(module_df, mods = interaction(group, module))
@@ -1003,8 +1312,8 @@ names<-colnames(warp_2[28:52])
 vis <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
+  test.emm <- emmeans(out, ~ ns(x, df = 3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   vis[[i]] <-list(out, df, test.emm, EF)
@@ -1039,29 +1348,6 @@ PC_vis<-df_PCvis[df_PCvis$pFDR <= 0.05, ]
 PC_vis
 ```
 
-```{r}
-# ListSort_AgeAdj
-# CogTotalComp_AgeAdj
-# DDisc_AUC_40K
-warp_2$PC_z<-scale(warp_2$PC)
-warp_2<-warp_2[complete.cases(warp_2$visual), ] 
-
-WMvis<-ggplot(warp_2, aes(x=PC_log, y=ListSort_AgeAdj, color=visual)) +
-    geom_point(shape=1, alpha = 0.25) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-WMvis
-cogvis<-ggplot(warp_2, aes(x=PC_log, y=CogTotalComp_AgeAdj, color=visual)) +
-    geom_point(shape=1, alpha = 0.25) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
-ddvis<-ggplot(warp_2, aes(x=PC_log, y=DDisc_AUC_40K, color=visual)) +
-    geom_point(shape=1, alpha = 0.25) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
-ggarrange(WMvis, cogvis, ddvis,
-          ncol = 2, nrow = 2)
-```
-
 #### Sensory 
 ```{r}
 warp_2 <- transform(module_df, mods = interaction(group, module))
@@ -1082,8 +1368,8 @@ names<-colnames(warp_2[28:52])
 sensory <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_2[56], y = warp_2[i], z=warp_2[52], data = warp_2)
+  test.emm <- emmeans(out, ~ ns(x, df = 3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   sensory[[i]] <-list(out, df, test.emm, EF)
@@ -1119,27 +1405,43 @@ PC_sensory
 ```
 
 ```{r}
-# Taste_AgeAdj
-# CogTotalComp_AgeAdj
-# DDisc_AUC_200
 warp_2$PC_z<-scale(warp_2$PC)
+
 warp_2<-warp_2[complete.cases(warp_2$sensory), ] 
 
-WMsen<-ggplot(warp_2, aes(x=PC_log, y=Taste_AgeAdj, color=sensory)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+DDisc_SV_1mo_200<-ggplot(warp_2, aes(x=PC_z, y=scale(DDisc_SV_1mo_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
 
-cogsen<-ggplot(warp_2, aes(x=PC_log, y=CogTotalComp_AgeAdj, color=sensory)) +
+DDisc_SV_6mo_200<-ggplot(warp_2, aes(x=PC_z, y=scale(DDisc_SV_6mo_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +  
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_1yr_200<-ggplot(warp_2, aes(x=PC_z, y=scale(DDisc_SV_1yr_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_5yr_200<-ggplot(warp_2, aes(x=PC_z, y=scale(DDisc_SV_5yr_200), color=sensory)) +
     geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none")
 
-ddsen<-ggplot(warp_2, aes(x=PC_log, y=DDisc_AUC_200, color=sensory)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+DDisc_SV_10yr_200<-ggplot(warp_2, aes(x=PC_z, y=scale(DDisc_SV_10yr_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
 
-ggarrange(WMsen, cogsen, ddsen,
-          ncol = 2, nrow = 2)
+PCsen_DDisc_AUC_200<-ggplot(warp_2, aes(x=PC_z, y=scale(DDisc_AUC_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+ggarrange(DDisc_SV_1mo_200, DDisc_SV_6mo_200,DDisc_SV_1yr_200, DDisc_SV_5yr_200,DDisc_SV_10yr_200,DDisc_AUC_200,
+          ncol = 2)
+
 ```
+
 ### Betweennness centrality 
 #### visual
 ```{r}
@@ -1202,11 +1504,11 @@ Cen_vis
 # CogTotalComp_AgeAdj
 # DDisc_AUC_200
 warp_3<-warp_3[complete.cases(warp_3$visual), ] 
-
-WMvis<-ggplot(warp_3, aes(x=centrality, y= ListSort_AgeAdj, color=visual)) +
+names(warp_3)
+WMvis<-ggplot(warp_3, aes(x=centrality, y= Endurance_AgeAdj, color=visual)) +
     geom_point(shape=1, alpha = 0.05) +    
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
+WMvis
 cogvis<-ggplot(warp_3, aes(x=centrality, y=CogTotalComp_AgeAdj, color=visual)) +
     geom_point(shape=1, alpha = 0.05) +    
     geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
@@ -1218,6 +1520,7 @@ ddvis<-ggplot(warp_3, aes(x=centrality, y=DDisc_AUC_40K, color=visual)) +
 ggarrange(WMvis, cogvis, ddvis,
           ncol = 2, nrow = 2)
 ```
+
 ## Clustering coefficient 
 #### Sensory 
 ```{r}
@@ -1228,7 +1531,6 @@ warp_X[warp_X$mods == "no.2", "sensory"] <- 'aBMI2'
 warp_X[warp_X$mods == "ov.2", "sensory"] <- 'hBMI2'
 warp_X[warp_X$mods == "ob.4", "sensory"] <- 'vhBMI4'
 warp_X$sensory<-as.factor(warp_X$sensory)
-colnames(warp_X)
 ```
 
 ```{r}
@@ -1240,8 +1542,8 @@ names<-colnames(warp_X[28:52])
 sensory <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
+  test.emm <- emmeans(out, ~ ns(x, df =3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   sensory[[i]] <-list(out, df, test.emm, EF)
@@ -1263,6 +1565,15 @@ for(i in seq(1, 24, by = 1)){
   sensory4[[i]] <-list(df)
 }
 
+sensory1<-list()
+for(i in seq(1, 24, by = 1)){
+  print(paste ("this is ",i))
+  df<-summary(sensory[28:64][[i]][[1]])
+  df$var<-names[i]
+  sensory1[[i]] <-list(df)
+}
+sensory1[14]
+names
 df_CCsensory<-bind_rows(sensory2)
 EF_CCsensory<-bind_rows(sensory4)
 
@@ -1277,25 +1588,122 @@ CC_sensory
 ```
 
 ```{r}
-#  ListSort_AgeAdj
-# CogTotalComp_AgeAdj
-# DDisc_AUC_200
+head(warp_X)
+fit<-lm(DDisc_AUC_200~clustering*sensory+Age_c+race_eth+Gender, data=warp_X, na.action = na.omit)#
+summary(fit)
+# test.emm <- emmeans(fit, ~ x*z)
+# df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
+# EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+sp_fit3<-lm(DDisc_AUC_200~ns(clustering, df = 3)*sensory+Age_c+race_eth+Gender, data=warp_X, na.action = na.omit)#
+summary(sp_fit)
+test.emm <- emmeans(sp_fit3, ~ ns(clustering, df = 3)*sensory)
+df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
+df
+EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
+EF
+
+sp_fit4<-lm(DDisc_AUC_200~ns(clustering, df = 4)*sensory+Age_c+race_eth+Gender, data=warp_X, na.action = na.omit)#
+summary(sp_fit4)
+
+library(lmtest)
+lrtest(fit, sp_fit)
+anova(fit, sp_fit)
+AIC(sp_fit4, sp_fit3)
+```
+
+
+
+```{r}
+colnames(warp_X)
+out<-fit_function(x=warp_X[56], y = warp_X[47], z=warp_X[19], data = warp_X)
+out<-fit_function(x=warp_X$sensory, y = warp_X$ListSort_AgeAdj, z=warp_X$clustering, data = warp_X)
+summary(out)
+```
+
+```{r}
 warp_X<-warp_X[complete.cases(warp_X$sensory), ] 
 
-tastesen<-ggplot(warp_X, aes(x=clustering, y= Taste_AgeAdj, color=sensory)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+CogCrystalComp_AgeAdj<-ggplot(warp_X, aes(x=clustering, y=scale(CogCrystalComp_AgeAdj), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +
+    geom_smooth(method=lm) + 
+    scale_color_manual(values=cbPalette)+ 
+    theme_classic()+ theme(legend.position = "none")
+CogCrystalComp_AgeAdj
+```
 
-cogsen<-ggplot(warp_X, aes(x=clustering, y=CogTotalComp_AgeAdj, color=sensory)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+# Delay discount 
+```{r}
+colnames(warp_X)
+warp_X<-warp_X[complete.cases(warp_X$sensory), ] 
 
-ddsen<-ggplot(warp_X, aes(x=clustering, y=DDisc_AUC_200 , color=sensory)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
+DDisc_SV_1mo_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1mo_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
 
-ggarrange(tastesen, cogsen, ddsen,
-          ncol = 2, nrow = 2)
+DDisc_SV_6mo_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_6mo_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +  
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_1yr_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1yr_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_5yr_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_5yr_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none")
+
+DDisc_SV_10yr_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_10yr_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+CCsen_DDisc_AUC_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_AUC_200), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+ggarrange(DDisc_SV_1mo_200, DDisc_SV_6mo_200,DDisc_SV_1yr_200, DDisc_SV_5yr_200,DDisc_SV_10yr_200,DDisc_AUC_200,
+          ncol = 2)
+
+```
+
+```{r}
+colnames(warp_X)
+warp_X<-warp_X[complete.cases(warp_X$sensory), ] 
+
+DDisc_SV_1mo_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1mo_40K), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+DDisc_SV_6mo_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_6mo_40K), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +  
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_1yr_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1yr_40K), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_5yr_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_5yr_40K), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none")
+
+DDisc_SV_10yr_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_10yr_40K), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+DDisc_AUC_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_AUC_40K), color=sensory)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+ggarrange(DDisc_SV_1mo_40K, DDisc_SV_6mo_40K,DDisc_SV_1yr_40K, DDisc_SV_5yr_40K,DDisc_SV_10yr_40K,DDisc_AUC_40K,
+          ncol = 2)
+
 ```
 
 #### Subcortical 
@@ -1306,7 +1714,6 @@ warp_X$subcortical <- NA
 warp_X[warp_X$mods == "no.5", "subcortical"] <- 'aBMI5'
 warp_X[warp_X$mods == "ov.6", "subcortical"] <- 'hBMI6'
 warp_X[warp_X$mods == "ob.6", "subcortical"] <- 'vhBMI6'
-colnames(warp_X)
 warp_X$subcortical<-as.factor(warp_X$subcortical)
 ```
 
@@ -1319,8 +1726,8 @@ names<-colnames(warp_X[28:52])
 subcortical <- list()
 for (i in seq(28, 52, by= 1)){
   print(paste("start", i))
-  out<-fit_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
-  test.emm <- emmeans(out, ~ x*z)
+  out<-spline_function(x=warp_X[56], y = warp_X[i], z=warp_X[19], data = warp_X)
+  test.emm <- emmeans(out, ~ ns(x, df =3)*z)
   df<-data.frame(contrast(test.emm, "pairwise",  adjust = "fdr"))
   EF <- data.frame(eff_size(test.emm, sigma = sigma(out), edf = 526, method = "pairwise"))
   subcortical[[i]] <-list(out, df, test.emm, EF)
@@ -1355,30 +1762,95 @@ CC_subcortical<-df_CCsubcortical[df_CCsubcortical$pFDR <= 0.05, ]
 CC_subcortical
 ```
 
+
 ```{r}
-#  ListSort_AgeAdj
-# CogTotalComp_AgeAdj
-# DDisc_AUC_200
 warp_X<-warp_X[complete.cases(warp_X$subcortical), ] 
 
-tastesen<-ggplot(warp_X, aes(x=clustering, y= Taste_AgeAdj, color=subcortical)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
-cogsen<-ggplot(warp_X, aes(x=clustering, y=CogTotalComp_AgeAdj, color=subcortical)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
-ddsen<-ggplot(warp_X, aes(x=clustering, y=DDisc_AUC_40K , color=subcortical)) +
-    geom_point(shape=1, alpha = 0.05) +    
-    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()
-
-ggarrange(tastesen, cogsen, ddsen,
-          ncol = 2, nrow = 2)
+CogCrystalComp_AgeAdj<-ggplot(warp_X, aes(x=clustering, y=scale(CogCrystalComp_AgeAdj), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +
+    geom_smooth(method=lm) + 
+    scale_color_manual(values=cbPalette)+ 
+    theme_classic()+ theme(legend.position = "none")
+CogCrystalComp_AgeAdj
 ```
+
+"DDisc_SV_1mo_40K"      "DDisc_SV_6mo_40K"      "DDisc_SV_1yr_40K"     
+[37] "DDisc_SV_3yr_40K"      "DDisc_SV_5yr_40K"      "DDisc_SV_10yr_40K"     "DDisc_AUC_200"        
+[41] "DDisc_AUC_40K" 
 ```{r}
-colnames(CC_subcortical)
+colnames(warp_X)
+warp_X<-warp_X[complete.cases(warp_X$subcortical), ] 
+
+DDisc_SV_1mo_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1mo_40K), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+DDisc_SV_6mo_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_6mo_40K), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +  
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_1yr_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1yr_40K), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_5yr_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_5yr_40K), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none")
+
+DDisc_SV_10yr_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_10yr_40K), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+CCsub_DDisc_AUC_40K<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_AUC_40K), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+ggarrange(DDisc_SV_1mo_40K, DDisc_SV_6mo_40K,DDisc_SV_1yr_40K, DDisc_SV_5yr_40K,DDisc_SV_10yr_40K,DDisc_AUC_40K,
+          ncol = 2)
+
 ```
+
+```{r}
+colnames(warp_X)
+warp_X<-warp_X[complete.cases(warp_X$subcortical), ] 
+
+DDisc_SV_1mo_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1mo_200), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+DDisc_SV_6mo_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_6mo_200), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +  
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_1yr_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_1yr_200), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+DDisc_SV_5yr_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_5yr_200), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +    
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none")
+
+DDisc_SV_10yr_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_SV_10yr_200), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+CCsub_DDisc_AUC_200<-ggplot(warp_X, aes(x=clustering, y=scale(DDisc_AUC_200), color=subcortical)) +
+    geom_point(shape=1, alpha = 0.05) +   
+    ylim(-3, 3)+
+    geom_smooth(method=lm) + scale_color_manual(values=cbPalette)+ theme_classic()+ theme(legend.position = "none") 
+
+ggarrange(DDisc_SV_1mo_200, DDisc_SV_6mo_200,DDisc_SV_1yr_200, DDisc_SV_5yr_200,DDisc_SV_10yr_200,DDisc_AUC_200,
+          ncol = 2)
+
+```
+
 
 ###  Combine the tables
 Keep the contrast, t-ratio, SE, var, pFDR, metric, area
@@ -1448,12 +1920,14 @@ colnames(PC_smHand)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.valu
 colnames(PC_smmouth)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
 colnames(Cen_vis)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
 colnames(CC_subcortical)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
+colnames(PC_sensory)<-c("contrast", "estimate","noSE", "nodf", "t.ratio", "p.value", "no_var", "nocontrast","effect.size","SE", "df", "lower.CL",    "upper.CL", "var","pFDR")
 
 ```
 
 
 
 ```{r}
+PC_sensory2<-df_func(df = PC_sensory, m = "participation coefficient", a = "sensory module")
 CC_sensory2<-df_func(df = CC_sensory, m = "clustering coefficient", a = "sensory module")
 PC_auditory2<-df_func(df = PC_auditory, m = "participation coefficient", a ="auditory functional network")
 PC_hand2<-df_func(df = PC_smHand, m = "participation coefficient", a = "somatosensory hand functional network")
@@ -1465,7 +1939,7 @@ CC_subcortical2<-df_func(df = CC_subcortical, m = "clustering coefficient", a = 
 
 
 ```{r}
-all_df<-rbind(CC_subcortical2, CC_sensory2, PC_auditory2, PC_hand2, PC_mouth2, CEN_visualmod2)
+all_df<-rbind(CC_subcortical2, CC_sensory2, PC_auditory2, PC_hand2, PC_mouth2, PC_sensory2 ,CEN_visualmod2)
 colz<-c("Metric","Area", "Contrast", "Behavioral variable", "effect.size","SE","pFDR")
 colnames(all_df)<-colz
 all_df$`Behavioral variable`<-as.factor(all_df$`Behavioral variable`)
@@ -1474,7 +1948,7 @@ all_df
 
 
 ```{r}
-write.table(all_df, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/post_hoc.csv", sep=",", row.names = F)
+write.table(all_df, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/spline_post_hoc.csv", sep=",", row.names = F)
 ```
 
 ## Testing edges 
@@ -1553,6 +2027,11 @@ violin(warp_spec, warp_spec$newvar, warp_spec$z_weight)
 
 
 ```{r}
+describeBy(warp_spec$z_weight, warp_spec$newvar)
+```
+
+
+```{r}
 warp_edges <- transform(edf, mods = interaction(group, source, target))
 head(warp_edges)
 levels(warp_edges$mods)
@@ -1615,16 +2094,6 @@ warp_spec$mods<-factor(warp_spec$mods)
 ```
 
 
-warp_X <- transform(module_df, mods = interaction(group, module))
-levels(warp_X$mods)
-warp_X$subcortical <- NA
-warp_X[warp_X$mods == "no.5", "subcortical"] <- 'aBMI5'
-warp_X[warp_X$mods == "ov.6", "subcortical"] <- 'hBMI6'
-warp_X[warp_X$mods == "ob.6", "subcortical"] <- 'vhBMI6'
-colnames(warp_X)
-warp_X$subcortical<-as.factor(warp_X$subcortical)
-
-
 ```{r}
 # y is behavioral measure
 # x is the group
@@ -1677,6 +2146,7 @@ save.image("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/HCPcheck.RData")
 ```{r}
 unique(no$subject)
 ```
+
 ```{r}
 no<-subset(data, data$group == "no")
 no$subject<-factor(no$subject)
@@ -1690,5 +2160,38 @@ head(no_mod2)
 156*.9
 setDT(no_mod2, keep.rownames = TRUE)[]
 no_mod2[no_mod2$summary.no.IC. > 140]
+```
+
+# Summary of what IC is in which module and functional group
+```{r}
+colnames(graph_df)
+levels(graph_df$group)
+nos<- subset(graph_df, graph_df$group == "normal")
+test<-table(nos$module, nos$IC, nos$area, nos$node_type)
+test<-data.frame(test)
+head(test)
+tes<-subset(test, test$Freq == 1)
+write.table(tes, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/no_freq.csv", sep=",", row.names = F)
+
+ovs<- subset(graph_df, graph_df$group == "overweight")
+test<-table(ovs$module, ovs$IC, ovs$area, ovs$node_type)
+test<-data.frame(test)
+head(test)
+tes<-subset(test, test$Freq == 1)
+write.table(tes, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/ov_freq.csv", sep=",", row.names = F)
+
+obs<- subset(graph_df, graph_df$group == "obese")
+test<-table(obs$module, obs$IC, obs$area, obs$node_type)
+test<-data.frame(test)
+head(test)
+tes<-subset(test, test$Freq == 1)
+write.table(tes, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/ob_freq.csv", sep=",", row.names = F)
+```
+
+
+
+
+```{r}
+load("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/HCPcheck.RData")
 ```
 
