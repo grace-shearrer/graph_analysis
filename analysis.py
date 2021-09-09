@@ -986,7 +986,7 @@ def permuatator5(liist):
 def find_latest(basepath, fi):
     p = os.path.join(basepath, fi)
     list_of_files = glob.glob(p) # * means all if need specific format then *.csv
-    latest_file = max(list_of_files, key=os.path.getctime)
+    latest_file = max(list_of_files, key=os.path.getmtime)
     print(latest_file)
     return(latest_file)
 

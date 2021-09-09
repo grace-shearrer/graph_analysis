@@ -33,7 +33,7 @@ atlas=pd.read_csv(os.path.join(p,'brains','atlas.csv'), sep=',')
 #### Open data from 3
 p = os.path.join(basepath,'tmp','5_summary_dict*')
 list_of_files = glob.glob(p) # * means all if need specific format then *.csv
-latest_file = max(list_of_files, key=os.path.getctime)
+latest_file = max(list_of_files, key=os.path.getmtime)
 print(latest_file)
 
 update_dict=an.onetoughjar(latest_file)
@@ -42,9 +42,9 @@ update_dict=an.onetoughjar(latest_file)
 #     print(key)
 #     update_dict[key] = {**value[0], **value[1]}
 
-nx.set_node_attributes(update_dict['no']['modules']['graph'], note_dict, 'area')
-nx.set_node_attributes(update_dict['ov']['modules']['graph'], note_dict, 'area')
-nx.set_node_attributes(update_dict['ob']['modules']['graph'], note_dict, 'area')
+nx.set_node_attributes(update_dict['no']['modules']['graph'], note_dict, 'condensed')
+nx.set_node_attributes(update_dict['ov']['modules']['graph'], note_dict, 'condensed')
+nx.set_node_attributes(update_dict['ob']['modules']['graph'], note_dict, 'condensed')
 
 # Make community graph
 for k,v in update_dict.items():

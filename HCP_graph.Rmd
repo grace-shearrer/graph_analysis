@@ -535,8 +535,7 @@ library(viridisLite)
 knitr::kable(total, format = "html", digits = 2, align = c('l','l','c','c','c','c','c'), col.names = c("Contrast","Edge connection","Estimate","Standard error", "df", "t-ratio", "pFDR"))%>%
   kable_styling(full_width = FALSE, position = "left")
 ```  
-
-``` 
+ 
 
 
 
