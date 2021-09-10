@@ -225,7 +225,7 @@ dfer<-function(X,Y){
 ## clustering
 ```{r}
 cluster<-subset(data, data$measure == "cluster")
-
+cluster
 clus_vals<-apply(cluster[2:101], FUN=fit_function, MARGIN = 2 ,data=cluster)
 indx<-names(clus_vals)
 
@@ -384,27 +384,66 @@ violin(graph_df, graph_df$group, graph_df$centrality)
 violin(graph_df, graph_df$group, graph_df$clustering)
 violin(graph_df, graph_df$group, graph_df$PC)
 ```
+```{r}
+names(graph_df)
+```
 
 ```{r}
-warp <- transform(graph_df, mods = interaction(group, area))
+rec<-subset(graph_df, graph_df$group == "normal")
+x<-table(rec$IC, rec$condensed)
+colSums(x)
+```
+
+
+
+```{r}
+warp <- transform(graph_df, mods = interaction(group, condensed))
+
+CC.gls <- gls(clustering ~ mods, data = warp)
+CC.emm <- emmeans(CC.gls, "mods")
+CC.fac <- update(CC.emm, levels = list(
+                group = c("normal", "overweight", "obese"), 
+                condensed = c('subcortical', 'sensory', 'BrainStem', 'Cerebellum',
+       'CinguloOperc', 'Default', 'Attn', 'FrontoParietal',
+       'MedialParietal', 'None', 'Visual')))
+
+contrast(CC.fac, "pairwise", by = "condensed", adjust = "fdr")
+
+DMN_PC<-subset(warp, warp$area == "Default")
+violin(DMN_PC, DMN_PC$group, DMN_PC$PC)
+
+MP_PC<-subset(warp, warp$area == "MedialParietal")
+violin(MP_PC, MP_PC$group, MP_PC$PC)
+
+
+describeBy(MP_PC$PC,MP_PC$group)
+
+hand_PPC<-subset(warp, warp$area == "Smhand")
+violin(hand_PPC, hand_PPC$group, hand_PPC$PC)
+```
+
+
+```{r}
+warp <- transform(graph_df, mods = interaction(group, condensed))
 
 PC.gls <- gls(PC ~ mods, data = warp)
 PC.emm <- emmeans(PC.gls, "mods")
 PC.fac <- update(PC.emm, levels = list(
                 group = c("normal", "overweight", "obese"), 
-                area = c("","Amygdala", "Auditory", "BrainStem", "Caudate", "Cerebellum", "CinguloOperc",
-                         "Default", "DorsalAttn", "FrontoParietal", "MedialParietal", "Putamen",
-                         "Smhand", "Smmouth", "Thalamus", "VentralAttn", "VentralDiencephalon", "Visual")))
+                condensed = c('subcortical', 'sensory', 'BrainStem', 'Cerebellum',
+       'CinguloOperc', 'Default', 'Attn', 'FrontoParietal',
+       'MedialParietal', 'None', 'Visual')))
 
-contrast(PC.fac, "pairwise", by = "area", adjust = "fdr")
+contrast(PC.fac, "pairwise", by = "condensed", adjust = "fdr")
 
 DMN_PC<-subset(warp, warp$area == "Default")
 violin(DMN_PC, DMN_PC$group, DMN_PC$PC)
 
-mouth_PPC<-subset(warp, warp$area == "Smmouth")
-mouth_PPC
+MP_PC<-subset(warp, warp$area == "MedialParietal")
+violin(MP_PC, MP_PC$group, MP_PC$PC)
 
-describeBy(mouth_PPC$PC,mouth_PPC$group)
+
+describeBy(MP_PC$PC,MP_PC$group)
 
 hand_PPC<-subset(warp, warp$area == "Smhand")
 violin(hand_PPC, hand_PPC$group, hand_PPC$PC)

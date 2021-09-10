@@ -614,7 +614,7 @@ def mu_make_graphs2(dicti):
     clustering = nx.clustering(tG, weight=True)
     # clustering_dict[key]=clustering
     ########################################
-    centrality = nx.betweenness_centrality(tG, weight=True)
+    # centrality = nx.betweenness_centrality(tG, weight=True)
     # centrality_dict[key]=centrality
     ########################################
     print('start zdegree')
@@ -627,13 +627,15 @@ def mu_make_graphs2(dicti):
     print(zD)
     ########################################
 
-    measures = {'clustering':clustering,'centrality':centrality, 'PC':pc_dict,'zDegree':zD}
+    #measures = {'clustering':clustering,'centrality':centrality, 'PC':pc_dict,'zDegree':zD}
+    measures = {'clustering':clustering, 'PC':pc_dict,'zDegree':zD}
     for name, mes in measures.items():
         nx.set_node_attributes(G, mes, '%s'%name)
         nx.set_node_attributes(tG, mes, '%s'%name)
      ########################################
 
-    return({'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition,
+    #return({'graphs':G, 'clustering_coeff':clustering, 'btn_centrality':centrality, 'PC':PCpos, 'modules':{'partition':partition, 'values':vals,'graph':tG,'zdegree':zdegree}})
+    return({'graphs':G, 'clustering_coeff':clustering, 'PC':PCpos, 'modules':{'partition':partition,
     'values':vals,'graph':tG,'zdegree':zdegree}})
 
 
@@ -886,15 +888,16 @@ def mod_world(dicti):
         if key == 'modules':
             dicti[key]['Q']=community.modularity(value['partition'], value['graph'], weight='weight')
 
-    edge_btw=nx.edge_betweenness_centrality(dicti['graphs'], normalized=True, weight='weight')
-    dicti['edge_btw']=edge_btw
-    nx.set_edge_attributes(dicti['graphs'], edge_btw, 'betweenness')
+    #edge_btw=nx.edge_betweenness_centrality(dicti['graphs'], normalized=True, weight='weight')
+    #dicti['edge_btw']=edge_btw
+    #nx.set_edge_attributes(dicti['graphs'], edge_btw, 'betweenness')
 
     unique, counts = np.unique(dicti['modules']['values'], return_counts=True)
     for i in unique:
         mod_dict.update({i:[]})
     for q, w in dicti['modules']['partition'].items():
         mod_dict[w].append(q)
+    #return(dicti, mod_dict)
     return(dicti, mod_dict)
 
 

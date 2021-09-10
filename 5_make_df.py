@@ -16,6 +16,8 @@ import multiprocessing
 from multiprocessing import Pool
 import glob
 
+import networkx as nx
+
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/'
 ###### Label specific #######
 labels = pd.read_csv(os.path.join(basepath,'tmp','mod_labels.csv'), sep=',')
@@ -32,14 +34,17 @@ atlas=pd.read_csv(os.path.join(p,'brains','atlas.csv'), sep=',')
 #### Open data from 3
 p = os.path.join(basepath,'tmp','5_summary_dict*')
 list_of_files = glob.glob(p) # * means all if need specific format then *.csv
-latest_file = max(list_of_files, key=os.path.getctime)
+latest_file = max(list_of_files, key=os.path.getmtime)
 print(latest_file)
 
-summary_dict=an.onetoughjar(latest_file)
-update_dict = {}
-for key, value in summary_dict.items():
-    print(key)
-    update_dict[key] = {**value[0], **value[1]}
+#summary_dict=an.onetoughjar(latest_file)
+#update_dict = {}
+#pdb.set_trace()
+#for key, value in summary_dict.items():
+#    print(key)
+#    update_dict[key] = {**value[0], **value[1]}
+
+update_dict=an.onetoughjar(latest_file)
 
 
 # Make community graph
