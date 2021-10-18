@@ -54,6 +54,9 @@ for group, dat in save_dict['NR'].items():
 
 liist = [save_dict['NR']['no']['edges'], save_dict['NR']['ov']['edges'], save_dict['NR']['ob']['edges']]
 sub_edge_df=pd.concat(liist)
+sub_edge_df = sub_edge_df[['weight', 'z_weight', 'subject']].groupby(['subject']).mean()
+sub_edge_df['Subject'] = sub_edge_df.index
+sub_edge_df.reset_index(drop=True)
 sub_edge_df.to_csv(os.path.join(basepath,'tmp','sub_edge_data.csv'), sep=',')
 an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict['NR'],'10_subedge_dict')
 
@@ -66,7 +69,7 @@ for group, data in subedge_dict.items():
     for sub, dat in data['graphs'].items():
         print(sub)
         tmp = pd.DataFrame.from_dict(dict(dat.nodes(data =True)), orient='index')
-        tmp['subject'] = sub
+        tmp['Subject'] = sub
         tmp['group'] = group
         tmp['IC'] = tmp.index
         tmp['IC'] = 'IC_' + tmp['IC'].astype(str)
@@ -76,10 +79,12 @@ latest_file=an.find_latest(os.path.join(basepath,'tmp'),'demo_dict*')
 print(latest_file)
 demo_dict=an.onetoughjar(latest_file)
 demo_df = pd.DataFrame.from_dict(demo_dict['NR'], orient='index')
-demo_df['subject'] = demo_df.index
-demo_df.reset_index(inplace = True)
-demo_df["subject"]=pd.to_numeric(demo_df["subject"])
-total["subject"]=pd.to_numeric(total["subject"])
-complete_df=pd.merge(demo_df, total, on="subject")
+demo_df['Subject'] = demo_df.index
+demo_df.reset_index(drop=True)
+demo_df["Subject"]=pd.to_numeric(demo_df["Subject"])
+total["Subject"]=pd.to_numeric(total["Subject"])
+sub_edge_df["Subject"]=pd.to_numeric(sub_edge_df["Subject"])
+complete_df=pd.merge(demo_df, total, on="Subject")
+complete_df=pd.merge(complete_df, sub_edge_df, on="Subject")
 complete_df.to_csv(os.path.join(basepath,'tmp','complete_data.csv'), sep=',')
 an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',complete_df,'11_complete_df')

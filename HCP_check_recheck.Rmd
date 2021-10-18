@@ -28,6 +28,8 @@ library(grid)
 library(nlme)
 library(ggpubr)
 library(splines)
+library(ggformula)
+library(lmtest)
 ```
 
 # Functions
@@ -44,8 +46,7 @@ violin <- function(d, x, y){
 ```{r}
 dat_check <-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/complete_data.csv", sep=",", header=T)
 head(dat_check)
-dat_check$subject <- as.factor(dat_check$subject)
-dat_check$Subject<-dat_check$subject
+dat_check$Subject <- as.factor(dat_check$Subject)
 colnames(dat_check)
 ```
 
@@ -96,6 +97,7 @@ myvars<-c("Subject","Gender","DDisc_SV_1mo_200","DDisc_SV_6mo_200","DDisc_SV_1yr
 unres<-unres[myvars]
 unres$Subject<-unres$Subject
 motion<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/HCP1200-Motion-Summaries.csv", header=T, sep=",")
+labels<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/parcel_names.csv", header = T, sep = ",")
 ```
 
 
@@ -105,7 +107,14 @@ data<-join(dat_check,unres)
 dim(data)
 head(data)
 data$X<-as.factor(data$X)
+names(data)
+summary(as.factor(data$IC))
+data<-join(data, labels)
+dim(data)
+summary(as.factor(data$Gordon.Label))
+```
 
+```{r}
 quantile(data$PC)
 data<-subset(data, data$PC > -4.100e+01)
 sd(data$PC)
@@ -121,33 +130,6 @@ hist(data$clustering, breaks = 100)
 ```
 
 
-## Graph data
-```{r, echo=FALSE}
-graph_df<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/submodule_data.csv", sep=",", header=T)
-head(graph_df)
-graph_df$group <- factor(graph_df$group, levels = c("no","overweight","obese"))
-summary(graph_df$X)
-
-k=max(graph_df$PC)
-hist(sqrt(k-graph_df$PC), breaks = 100)
-graph_df$PC_sq<-sqrt(k-graph_df$PC)
-  
-hist(log10(graph_df$centrality), breaks = 100)
-graph_df$centrality_log<-log10(graph_df$centrality)
-
-kc<-max(graph_df$clustering)
-hist(sqrt(kc-graph_df$clustering), breaks = 100)
-graph_df$clustering_sq<-sqrt(kc-graph_df$clustering)
-```
-
-## Edge data
-```{r}
-edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_edge_data.csv", sep=",", header = T)
-head(edge_df)
-mod_edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_comm_edge_data.csv", sep=",", header = T)
-```
-
-
 # Cleanup, center, ect
 ```{r, echo=FALSE}
 cols <- c("Subject","Gender" ,"ZygosityGT", "Mother_ID","Father_ID","group","race_eth","modules","IC")
@@ -157,29 +139,9 @@ data %<>% mutate_at(cols, funs(factor(.)))
 data$group <- ordered(data$group, levels = c("no", "ov", "ob"))
 head(data)
 ```
-
-```{r, echo=FALSE}
-levels(graph_df$area)
-graph_df$area<-revalue(graph_df$area, c("cerebellum"="Cerebellum"))
-graph_df$area<-revalue(graph_df$area, c("None"=""))
-graph_df$module<-as.factor(graph_df$module)
-```
-## Contrasts for demographics
-```{r, echo=FALSE}
-dat<-data[!duplicated(data[,c('Subject')]),]
-levels(dat$group)    
-levels(dat$race_eth)
-head(dat)
-#          no  ov  ob
-cons<- list(
-  noVov = c(1, -1,  0),
-  noVob = c(1,  0, -1),
-  ovVob = c(0,  1, -1)
-) 
-```
 # Motion data
 ```{r}
-motion<-motion[!duplicated(motion$Subject), ]
+#motion<-motion[!duplicated(motion$Subject), ]
 drops <- c("type")
 motion<-motion[ , !(names(motion) %in% drops)]
 head(motion)
@@ -188,122 +150,359 @@ motion<-motion %>%
     group_by(Subject) %>%
     summarise_all("mean")
 summary(motion)
-dat<-join(dat, motion)
+dat<-join(data, motion)
+dim(data)
+dim(dat)
 ```
+
+## Contrasts for demographics
+```{r, echo=FALSE}
+demos<-data[!duplicated(data[,c('Subject')]),]
+levels(demos$group)    
+levels(demos$race_eth)
+head(demos)
+#          no  ov  ob
+cons<- list(
+  noVov = c(1, -1,  0),
+  noVob = c(1,  0, -1),
+  ovVob = c(0,  1, -1)
+) 
+```
+
+
+
+
 # Covariates
 ## Age
 ```{r, echo=FALSE}
-dm1<-lm(Age_c~group, data=dat)
+dm1<-lm(Age_c~group, dat=demos)
 summary(dm1)
 lsq_dm1 = lsmeans(dm1, "group")
 contrast(lsq_dm1, cons, adjust='fdr')
 
-violin(dat,dat$group,dat$Age_c)
-describeBy(dat$Age_in_Yrs, dat$group)
+
+violin(demos,demos$group,demos$Age_c)
+describeBy(demos$Age_in_Yrs, demos$group)
 ## No difference in age 
 ```
 
 # BMI
 ```{r, echo=FALSE}
-dm2<-lm(BMI~group, data=dat)
+dm2<-lm(BMI~group, data=demos)
 lsq_dm2 = lsmeans(dm2, "group")
 contrast(lsq_dm2, cons, adjust='fdr')
 ## Sanity check difference between the groups
-violin(dat,dat$group,dat$BMI)
-describeBy(dat$BMI, dat$group)
+violin(demos,demos$group,demos$BMI)
+describeBy(demos$BMI, demos$group)
 ```
 
 #HBA1c
 ```{r, echo=FALSE}
-dm3<-lm(HBA1c_c~group, data=dat)
+dm3<-lm(HBA1c_c~group, data=demos)
 summary(dm3)
 lsq_dm3 = lsmeans(dm3, "group")
 contrast(lsq_dm3, cons, adjust='fdr')
 
-violin(dat,dat$group,dat$HbA1C)
-describeBy(dat$HbA1C, dat$group)
+violin(demos,demos$group,demos$HbA1C)
+describeBy(demos$HbA1C, demos$group)
 ```
 
 
 ## sex
 ```{r, echo=FALSE}
-chisq.test(table(dat$group, dat$Gender))
-tapply(dat$group, dat$Gender, summary)
+chisq.test(table(demos$group, demos$Gender))
+tapply(demos$group, demos$Gender, summary)
 
-balloonplot(table(dat$group, dat$Gender), main ="Gender Frequencies", xlab ="", ylab="",
+balloonplot(table(demos$group, demos$Gender), main ="Gender Frequencies", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, colmar=5, dotcolor=cbPalette)
 ```
 ## Race
 ```{r, echo=FALSE}
-chisq.test(table(dat$group, dat$race_eth))
-tapply(dat$group, dat$race_eth, summary)
+chisq.test(table(demos$group, demos$race_eth))
+tapply(demos$group, demos$race_eth, summary)
 
-balloonplot(table(dat$group, dat$race_eth), main ="Racial/Ethnic Frequencies", xlab ="", ylab="",
+balloonplot(table(demos$group, demos$race_eth), main ="Racial/Ethnic Frequencies", xlab ="", ylab="",
             label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
 ```
-
-
-# General balloon plots
-```{r}
-x = 1
-
-no_<-subset(graph_df, graph_df$group == "no")
-
-balloonplot(table(no_$module, no_$area), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
-
-no_2<-subset(no_, no_$module == 2)
-balloonplot(table(no_2$node_type, no_2$area), main ="Module Frequencies per functional network average BMI sensory", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
-
-no_5<-subset(no_, no_$module == 5)
-balloonplot(table(no_5$node_type, no_5$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
-
-ov_<-subset(graph_df, graph_df$group == "overweight")
-balloonplot(table(ov_$module, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
-
-ov_2<-subset(ov_, ov_$module == 2)
-balloonplot(table(ov_2$node_type, ov_2$area), main ="Module Frequencies per sensory high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
-
-ov_6<-subset(ov_, ov_$module == 6)
-balloonplot(table(ov_6$node_type, ov_6$area), main ="Module Frequencies per subcortical high BMI module 5", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
-
-
-ob_<-subset(graph_df, graph_df$group == "obese")
-balloonplot(table(ob_$module, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
-
-ob_4<-subset(ob_, ob_$module == 4)
-balloonplot(table(ob_4$node_type, ob_4$area), main ="Module Frequencies per sensory very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
-
-ob_6<-subset(ob_, ob_$module == 6)
-balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per subcortical very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
-```
-
-```{r}
-head(dat)
-```
-
 # Models
+```{r}
+#          no  ov  ob
+cons<- list(
+  noVov = c(1, -1,  0),
+  noVob = c(1,  0, -1),
+  ovVob = c(0,  1, -1)
+) 
+hist(dat$clustering)
+hist(log10(dat$motion))
+dat$motion_log10<-log10(dat$motion)
+hist(sqrt(dat$assortativity))
+dat$assortativity_sqrt<-sqrt(dat$assortativity)
+```
+
 ## From Tooley
 C = age + sex + race + meanRMS + weight + SES + age∗SES
 ```{r}
-hist(log10(dat$BMI))
-dat$motion_log10<-log10(dat$motion)
-
-f0<-lm(clustering ~ Age_c + HBA1c_c + race_eth + motion_log10 + BMI, data=dat)
+f0<-lm(clustering ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + group, data=dat)
 summary(f0)
+lm.beta(f0)
 
 
-f1<-lm(clustering ~ Age_c + HBA1c_c + race_eth + motion_log10:group + BMI, data=dat)
-summary(f1)
+lsq_f0 = lsmeans(f0, "group")
+contrast(lsq_f0, cons, adjust='fdr')
 
 
-ggplot(dat, aes(BMI, clustering)) +
-    geom_point(shape=1)+ geom_smooth(method=lm)
+ggplot(dat, aes(BMI, clustering, color = group, group = group)) +
+  geom_point(alpha = 1/100)+ 
+  geom_smooth(method = lm) + 
+  scale_color_manual(values=cbPalette)+
+  theme_classic()
 
-
-sggplot(dat, aes(clustering, motion_log10, group = group, color = group)) +
-    geom_point(shape=1)+ geom_smooth(method=lm)
-
+violin(dat,dat$group,dat$clustering)
 ```
+
+# BMI related to assortativity, quadratic 
+```{r}
+f2.0<-lm(sqrt(assortativity) ~ Age_c + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=dat)
+summary(f2.0)
+lm.beta(f2.0)
+
+f2_df4<-lm(assortativity_sqrt ~ Age_c + HBA1c_c + race_eth + motion_log10 + weight +bs(BMI, df = 4, degree = 2), data=dat)
+summary(f2)
+lm.beta(f2)
+
+f2_df3<-lm(assortativity_sqrt ~ Age_c + HBA1c_c + race_eth + motion_log10 + weight +bs(BMI, df = 3, degree = 2), data=dat)
+
+f2_df2<-lm(assortativity_sqrt ~ Age_c + HBA1c_c + race_eth + motion_log10 + weight +bs(BMI, df = 2, degree = 2), data=dat)
+
+f2_df0<-lm(assortativity_sqrt ~ Age_c + HBA1c_c + race_eth + motion_log10 + weight +bs(BMI,  degree = 2), data=dat)
+
+lrtest(f2_df4, f2_df3)
+lrtest(f2_df4, f2_df2)
+lrtest(f2_df3, f2_df2) # no difference
+
+lrtest(f2_df4, f2_df0)
+lrtest(f2_df3, f2_df0) # no difference
+lrtest(f2_df2, f2_df0) # no difference
+
+
+
+AIC(f2_df4, f2_df3, f2_df2, f2_df0)
+# df = 4 best
+
+f2.1<-lm(assortativity_sqrt ~ Age_c + HBA1c_c + race_eth + motion_log10 + weight +group, data=dat)
+summary(f2.1)
+lm.beta(f2.1)
+
+lrtest(f2.1, f2)
+AIC(f2.1, f2)
+
+lsq_f2.1 = lsmeans(f2.1, "group")
+contrast(lsq_f2.1, cons, adjust='fdr')
+
+#spline model is more parsimonious 
+#bs(x, degree = 2))
+ggplot(dat, aes(BMI, sqrt(assortativity))) +
+  geom_point(shape=1)+ 
+  geom_smooth()
+
+ggplot(dat, aes(BMI, assortativity_sqrt)) +
+  geom_point(alpha = 1/100)+ 
+  geom_smooth()+
+  geom_spline(aes(BMI), df = 4) + 
+  scale_color_manual(values=cbPalette)+
+  theme_classic()
+```
+
+```{r}
+f3<-lm(clustering ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI*assortativity_sqrt, data=dat)
+summary(f3) # BMI no longer significant
+
+f3.1<-lm(assortativity_sqrt ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI*clustering, data=dat)
+summary(f3.1)# BMI still significant <- assortativity is driving the differences in clustering coefficients]
+```
+
+
+```{r}
+dat$Gordon.Label<-as.factor(dat$Gordon.Label)
+summary(as.factor(dat$Gordon.Label))
+```
+```{r}
+dat$comb_label[dat$Gordon.Label == "BrainStem"]<- "brain stem"
+
+dat$comb_label[dat$Gordon.Label == "L_Auditory_5"]<- "auditory"
+dat$comb_label[dat$Gordon.Label == "R_Auditory_17"  ] <- "auditory"
+
+dat$comb_label[dat$Gordon.Label == "L_Caudate" ]<- "subcortical"
+dat$comb_label[dat$Gordon.Label == "R_Caudate" ]<- "subcortical"
+dat$comb_label[dat$Gordon.Label == "L_Putamen"]<- "subcortical"
+dat$comb_label[dat$Gordon.Label == "R_Putamen" ]<- "subcortical"
+dat$comb_label[dat$Gordon.Label == "L_Thalamus" ]<- "subcortical"
+dat$comb_label[dat$Gordon.Label =="R_Thalamus" ]<- "subcortical"
+dat$comb_label[dat$Gordon.Label ==  "L_VentralDiencephalon" ]    <- "subcortical"           
+dat$comb_label[dat$Gordon.Label ==  "R_VentralDiencephalon"]<- "subcortical"
+dat$comb_label[dat$Gordon.Label ==  "R_Amygdala"] <- "subcortical"
+
+dat$comb_label[dat$Gordon.Label == "L_Cerebellum"] <- "cerebellum"
+dat$comb_label[dat$Gordon.Label == "R_Cerebellum"] <- "cerebellum"
+
+#L_CinguloOperc_15     L_CinguloOperc_19     L_CinguloOperc_20 L_CinguloOperc_7 R_CinguloOperc_40 
+dat$comb_label[dat$Gordon.Label == "L_CinguloOperc_7" ] <- "CON"
+dat$comb_label[dat$Gordon.Label == "L_CinguloOperc_15" ] <- "CON"
+dat$comb_label[dat$Gordon.Label == "L_CinguloOperc_19"] <- "CON"
+dat$comb_label[dat$Gordon.Label == "L_CinguloOperc_20" ] <- "CON"
+dat$comb_label[dat$Gordon.Label == "R_CinguloOperc_40" ] <- "CON"
+#L_Default_11          L_Default_16           L_Default_7  R_Default_26          R_Default_28  R_Default_36          R_Default_37
+dat$comb_label[dat$Gordon.Label == "L_Default_11"] <- "DMN"
+dat$comb_label[dat$Gordon.Label == "L_Default_16"] <- "DMN"
+dat$comb_label[dat$Gordon.Label == "L_Default_7"] <- "DMN"
+dat$comb_label[dat$Gordon.Label == "R_Default_26"] <- "DMN"
+dat$comb_label[dat$Gordon.Label == "R_Default_28"] <- "DMN"
+dat$comb_label[dat$Gordon.Label == "R_Default_36"] <- "DMN"
+dat$comb_label[dat$Gordon.Label =="R_Default_37"] <- "DMN"
+#L_DorsalAttn_13       L_DorsalAttn_17        L_DorsalAttn_9 R_DorsalAttn_27       R_DorsalAttn_28       R_DorsalAttn_30
+dat$comb_label[dat$Gordon.Label == "L_DorsalAttn_13"] <- "DAN"
+dat$comb_label[dat$Gordon.Label == "L_DorsalAttn_17"] <- "DAN"
+dat$comb_label[dat$Gordon.Label == "L_DorsalAttn_9"] <- "DAN"
+dat$comb_label[dat$Gordon.Label == "R_DorsalAttn_27"] <- "DAN"
+dat$comb_label[dat$Gordon.Label == "R_DorsalAttn_28"] <- "DAN"
+dat$comb_label[dat$Gordon.Label == "R_DorsalAttn_30"] <- "DAN"
+# L_FrontoParietal_1    L_FrontoParietal_2    L_FrontoParietal_4 R_FrontoParietal_10   R_FrontoParietal_11 R_FrontoParietal_12   R_FrontoParietal_20   R_FrontoParietal_21 
+dat$comb_label[dat$Gordon.Label == "L_FrontoParietal_1"] <- "FPN"
+dat$comb_label[dat$Gordon.Label == "L_FrontoParietal_2"] <- "FPN"
+dat$comb_label[dat$Gordon.Label == "L_FrontoParietal_4"] <- "FPN"
+dat$comb_label[dat$Gordon.Label == "R_FrontoParietal_10"] <- "FPN"
+dat$comb_label[dat$Gordon.Label == "R_FrontoParietal_11" ] <- "FPN"
+dat$comb_label[dat$Gordon.Label ==  "R_FrontoParietal_12"] <- "FPN"
+dat$comb_label[dat$Gordon.Label ==  "R_FrontoParietal_20"] <- "FPN"
+dat$comb_label[dat$Gordon.Label == "R_FrontoParietal_21"] <- "FPN"
+
+dat$comb_label[dat$Gordon.Label == "R_MedialParietal_5"] <- "MPN"
+#L_None_21              L_None_7 R_None_34  
+dat$comb_label[dat$Gordon.Label == "L_None_21"] <- "none"
+dat$comb_label[dat$Gordon.Label == "L_None_7"] <- "none"
+dat$comb_label[dat$Gordon.Label == "R_None_34" ] <- "none"
+#L_SMhand_15 L_SMhand_5 R_SMhand_37 
+dat$comb_label[dat$Gordon.Label == "L_SMhand_15"] <- "smHand"
+dat$comb_label[dat$Gordon.Label == "L_SMhand_5"] <- "smHand"
+dat$comb_label[dat$Gordon.Label == "R_SMhand_37"] <- "smHand"
+#L_SMmouth_2           L_SMmouth_4  R_SMmouth_7 
+dat$comb_label[dat$Gordon.Label == "L_SMmouth_2"] <- "smMouth"
+dat$comb_label[dat$Gordon.Label == "L_SMmouth_4"] <- "smMouth"
+dat$comb_label[dat$Gordon.Label == "R_SMmouth_7"] <- "smMouth"
+#L_VentralAttn_1       L_VentralAttn_6 R_VentralAttn_12      R_VentralAttn_19
+dat$comb_label[dat$Gordon.Label == "L_VentralAttn_1"] <- "VAN"
+dat$comb_label[dat$Gordon.Label == "L_VentralAttn_6"] <- "VAN"
+dat$comb_label[dat$Gordon.Label == "R_VentralAttn_12"] <- "VAN"
+dat$comb_label[dat$Gordon.Label == "R_VentralAttn_19"] <- "VAN"
+#L_Visual_1           L_Visual_13           L_Visual_15           L_Visual_16           L_Visual_17            L_Visual_3            L_Visual_9
+#R_Visual_25           R_Visual_26 R_Visual_27           R_Visual_29           R_Visual_35           R_Visual_37           R_Visual_39 
+dat$comb_label[dat$Gordon.Label == "L_Visual_1"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "L_Visual_13"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "L_Visual_15"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "L_Visual_16"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "L_Visual_17" ] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "L_Visual_3"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "L_Visual_9" ] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "R_Visual_25" ] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "R_Visual_26" ] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "R_Visual_27" ] <- "VIZ"
+dat$comb_label[dat$Gordon.Label ==   "R_Visual_29"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "R_Visual_35"] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "R_Visual_37" ] <- "VIZ"
+dat$comb_label[dat$Gordon.Label == "R_Visual_39" ] <- "VIZ"
+
+dat$comb_label<-as.factor(dat$comb_label)
+summary(dat$comb_label)
+```
+```{r}
+dat_net <- transform(dat, mods = interaction(group, comb_label))
+head(dat_net)
+```
+
+```{r}
+f5<-lm(clustering ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + comb_label*group, data = dat_net, na.action = na.omit)
+
+f5.1<-lm(clustering ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + comb_label + group, data = dat_net, na.action = na.omit)
+anova(f5, f5.1)
+```
+
+```{r}
+CC.net.gls <- gls(clustering ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + mods, data = dat_net, na.action = na.omit) #scaled so these are the betas
+CC.net.emm <- emmeans(CC.net.gls, "mods")
+CC.net.fac <- update(CC.net.emm, levels = list(
+                group = c("no","ov","ob"),
+                comb_label = c("auditory", "brain stem", "cerebellum","CON","DAN","DMN","FPN","MPN","none","smHand","smMouth", "subcortical","VAN","VIZ")))
+
+contrast(CC.net.fac, "pairwise", by = "comb_label", adjust = "fdr")
+
+pwpm(CC.net.fac, by = "comb_label", adjust = "fdr")
+eff_size(CC.net.fac, sigma = sigma(CC.net.gls), edf = 16847, by = "comb_label")
+```
+```{r}
+CON<-subset(dat_net, dat_net$comb_label == "subcortical")
+violin(CON, CON$group, CON$clustering)
+```
+
+
+```{r}
+names(dat_net)
+dems<-c("Subject","Age_c","Gender","HBA1c_c","race_eth","motion_log10","weight", "group", "BMI")
+g<-dat_net[dems]
+head(g)
+g<-g[!duplicated(g), ]
+l<-dat_net[c('Subject', 'clustering', 'comb_label')]
+
+subject_clust <-l %>%
+  group_by(Subject, comb_label) %>%
+  summarise_all(mean)
+subject_clust
+
+library(tidyr)
+sub_cluster_wide<-spread(subject_clust, key = comb_label, value = clustering)
+pew_pew<-join(sub_cluster_wide, g)
+pew_pew
+```
+
+```{r}
+#Auditory
+auditory <- lm(auditory ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+summary(auditory)
+#cerebellum
+cerebellum <- lm(cerebellum ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#CON
+CON <- lm(CON ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#DAN
+DAN <- lm(DAN ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#DMN
+DMN<- lm(DMN ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#FPN
+FPN <- lm(FPN ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#MPN
+MPN <- lm(MPN ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#subcortical
+subcortical <- lm(subcortical ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#VAN
+VAN <- lm(VAN ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+#VIZ
+VIZ <- lm(VIZ ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + BMI, data=pew_pew)
+```
+
+
+
+```{r}
+#write scaled betas to outfile
+models<-list(auditory, cerebellum, CON, DAN, DMN, FPN, MPN, subcortical, VAN, VIZ)
+bmi_betas <- lapply(models, function(x) { lm.beta(x)$standardized.coefficients[14]})
+bmi_se <- lapply(models,function(x) { summary(x)$coefficients[14,2]})
+bmi_pvals <- lapply(models,function(x) { summary(x)$coefficients[14,4]})
+bmi_scaled_net_betas <- as.data.frame(cbind(unlist(bmi_betas),unlist(bmi_se), unlist(bmi_pvals)))
+colnames(bmi_scaled_net_betas) <- c("bmi_betas", "bmi_se", "bmi_pvals")
+bmi_scaled_net_betas$bmi_pvals_fdr <- p.adjust(bmi_scaled_net_betas$bmi_pvals, method = "fdr")
+bmi_scaled_net_betas
+```
+
+
+
 
 
 
