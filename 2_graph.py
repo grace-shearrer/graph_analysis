@@ -10,6 +10,9 @@ from multiprocessing import Pool
 import analysis as an
 import  pdb
 
+#if you get a random state error do this
+#pip install decorator==4.4.2
+
 basepath='/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets/HCP_PTN1200/graph_analysis/'
 file_dict={'MZ':{'no':{},'ov':{},'ob':{}},'DZ':{'no':{},'ov':{},'ob':{}},'NR':{'no':{},'ov':{},'ob':{}}}
 #read in all the data

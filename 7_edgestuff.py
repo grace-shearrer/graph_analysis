@@ -19,11 +19,11 @@ summary_dict=an.onetoughjar(latest_file)
 
 for group, values in save_dict['NR'].items():
     print(group)
-    values['modules'] = summary_dict[group]['modules']['partition']
+    values['modules'] = summary_dict[group][1]['modules']['partition']
     for sub, graph in values['graphs'].items():
         print(sub)
         G = graph
-        modules = summary_dict[group]['modules']['partition']
+        modules = summary_dict[group][1]['modules']['partition']
         nx.set_node_attributes(G, modules, 'modules')
 
 # Make community graph
@@ -60,7 +60,8 @@ for group, data in subedge_dict.items():
         tmp['IC'] = 'IC_' + tmp['IC'].astype(str)
         _dfs.append(tmp)
 total = pd.concat(_dfs)
-latest_file=an.find_latest(os.path.join(basepath,'tmp'),'demo*')
+latest_file=an.find_latest(os.path.join(basepath,'tmp'),'demo_dict*')
+print(latest_file)
 demo_dict=an.onetoughjar(latest_file)
 demo_df = pd.DataFrame.from_dict(demo_dict['NR'], orient='index')
 demo_df['subject'] = demo_df.index

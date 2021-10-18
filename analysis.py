@@ -35,6 +35,8 @@ from multiprocessing import Pool
 import bct as bct
 from collections import namedtuple
 from collections import Counter
+from decorator import decorator
+
 
 datefmt='%m-%d-%Y_%I-%M-%S'
 logging.basicConfig(format='%(asctime)s %(message)s ', datefmt=datefmt, level=logging.INFO)
