@@ -256,9 +256,12 @@ def make_graphs(dict_o_data, direction, min_cor):
         centrality = nx.betweenness_centrality(tG, weight=True)
         centrality_dict[key]=centrality
         ########################################
+        r = nx.degree_assortativity_coefficient(tG)
+        ########################################
         nx.set_node_attributes(G, centrality, 'centrality')
         nx.set_node_attributes(G, clustering, 'clustering')
         nx.set_node_attributes(G, pc_dict, 'PC')
+        nx.set_node_attributes(G, r, 'assortativity')
         graph_dict[key]=G
         ########################################
     return({'mean_FC':FC_dict, 'graphs':graph_dict, 'clustering_coeff':clustering_dict, 'btn_centrality':centrality_dict, 'PC':PC_dict})

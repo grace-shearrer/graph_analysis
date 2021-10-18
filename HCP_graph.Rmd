@@ -336,7 +336,7 @@ pAll<-balloonplot(table(graph_df$group, graph_df$module), main ="Module Frequenc
 ```{r}
 x = 1
 no_<-subset(graph_df, graph_df$group == "normal")
-balloonplot(table(no_$module, no_$area), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+balloonplot(table(no_$module, no_$condensed), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
 no_2<-subset(no_, no_$module == 2)
 balloonplot(table(no_2$node_type, no_2$area), main ="Module Frequencies per functional network average BMI sensory", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
@@ -345,7 +345,7 @@ no_5<-subset(no_, no_$module == 5)
 balloonplot(table(no_5$node_type, no_5$area), main ="Module Frequencies per functional network average BMI subcortical", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
 
 ov_<-subset(graph_df, graph_df$group == "overweight")
-balloonplot(table(ov_$module, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+p2<-balloonplot(table(ov_$module, ov_$area), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
 
 ov_2<-subset(ov_, ov_$module == 2)
 balloonplot(table(ov_2$node_type, ov_2$area), main ="Module Frequencies per sensory high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
@@ -355,14 +355,24 @@ balloonplot(table(ov_6$node_type, ov_6$area), main ="Module Frequencies per subc
 
 
 ob_<-subset(graph_df, graph_df$group == "obese")
-balloonplot(table(ob_$module, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+p3<-balloonplot(table(ob_$module, ob_$area), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
 ob_4<-subset(ob_, ob_$module == 4)
 balloonplot(table(ob_4$node_type, ob_4$area), main ="Module Frequencies per sensory very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 
 ob_6<-subset(ob_, ob_$module == 6)
 balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per subcortical very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+
+
+
 ```
+
+```{r}
+balloonplot(table(no_$module, no_$condensed), main ="Module Frequencies per functional network average BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[1])
+balloonplot(table(ov_$module, ov_$condensed), main ="Module Frequencies per functional network high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[2])
+balloonplot(table(ob_$module, ob_$condensed), main ="Module Frequencies per functional network very high BMI", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
+```
+
 ```{r}
 graph_df$module<-as.factor(graph_df$module)
 ```
@@ -392,6 +402,12 @@ names(graph_df)
 rec<-subset(graph_df, graph_df$group == "normal")
 x<-table(rec$IC, rec$condensed)
 colSums(x)
+
+y<-table(rec$IC, rec$module)
+
+colSums(x)
+colSums(y)
+
 ```
 
 

@@ -95,7 +95,10 @@ myvars<-c("Subject","Gender","DDisc_SV_1mo_200","DDisc_SV_6mo_200","DDisc_SV_1yr
              "GaitSpeed_Comp","Dexterity_AgeAdj","Strength_AgeAdj","Taste_AgeAdj")
 unres<-unres[myvars]
 unres$Subject<-unres$Subject
+motion<-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/HCP1200-Motion-Summaries.csv", header=T, sep=",")
 ```
+
+
 # joining individual sub data 
 ```{r, echo=FALSE}
 data<-join(dat_check,unres)
@@ -140,6 +143,7 @@ graph_df$clustering_sq<-sqrt(kc-graph_df$clustering)
 ## Edge data
 ```{r}
 edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_edge_data.csv", sep=",", header = T)
+head(edge_df)
 mod_edge_df = read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/sub_comm_edge_data.csv", sep=",", header = T)
 ```
 
@@ -165,13 +169,26 @@ graph_df$module<-as.factor(graph_df$module)
 dat<-data[!duplicated(data[,c('Subject')]),]
 levels(dat$group)    
 levels(dat$race_eth)
-
+head(dat)
 #          no  ov  ob
 cons<- list(
   noVov = c(1, -1,  0),
   noVob = c(1,  0, -1),
   ovVob = c(0,  1, -1)
 ) 
+```
+# Motion data
+```{r}
+motion<-motion[!duplicated(motion$Subject), ]
+drops <- c("type")
+motion<-motion[ , !(names(motion) %in% drops)]
+head(motion)
+
+motion<-motion %>%
+    group_by(Subject) %>%
+    summarise_all("mean")
+summary(motion)
+dat<-join(dat, motion)
 ```
 # Covariates
 ## Age
@@ -260,8 +277,36 @@ ob_6<-subset(ob_, ob_$module == 6)
 balloonplot(table(ob_6$node_type, ob_6$area), main ="Module Frequencies per subcortical very high BMI module 6", xlab ="", ylab="", label = TRUE, show.margins = FALSE, colsrt = 90, text.size=x ,dotsize = 5, colmar=5, dotcolor=cbPalette[3])
 ```
 
+```{r}
+head(dat)
+```
 
 # Models
+## From Tooley
+C = age + sex + race + meanRMS + weight + SES + age∗SES
+```{r}
+hist(log10(dat$BMI))
+dat$motion_log10<-log10(dat$motion)
+
+f0<-lm(clustering ~ Age_c + HBA1c_c + race_eth + motion_log10 + BMI, data=dat)
+summary(f0)
+
+
+f1<-lm(clustering ~ Age_c + HBA1c_c + race_eth + motion_log10:group + BMI, data=dat)
+summary(f1)
+
+
+ggplot(dat, aes(BMI, clustering)) +
+    geom_point(shape=1)+ geom_smooth(method=lm)
+
+
+sggplot(dat, aes(clustering, motion_log10, group = group, color = group)) +
+    geom_point(shape=1)+ geom_smooth(method=lm)
+
+```
+
+
+
 ```{r}
 #took out FC
 fit_function<-function(y,data){
