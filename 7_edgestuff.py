@@ -36,15 +36,27 @@ for group,v in save_dict['NR'].items():
         v['comm_graph'][sub] = comm_graph
 
 
+#tmp_dict = {'no':{}, 'ov': {}, 'ob': {}}
+#for group, dat in save_dict['NR'].items():
+#    print(group)
+#    x=an.cal_edges(dat['comm_graph'], basepath, group)
+#    tmp_dict[group]=pd.concat(list(x.values()))
+#sub_comm_edge_df=pd.concat(list(tmp_dict.values()))
+#sub_comm_edge_df.to_csv(os.path.join(basepath,'tmp','sub_comm_edge_data.csv'), sep=',')
+#an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict['NR'],'10_subedge_dict')
 
-tmp_dict = {'no':{}, 'ov': {}, 'ob': {}}
 for group, dat in save_dict['NR'].items():
     print(group)
-    x=an.cal_edges(dat['comm_graph'], basepath, group)
-    tmp_dict[group]=pd.concat(list(x.values()))
-sub_comm_edge_df=pd.concat(list(tmp_dict.values()))
-sub_comm_edge_df.to_csv(os.path.join(basepath,'tmp','sub_comm_edge_data.csv'), sep=',')
+    x=an.cal_edges(dat['graphs'], basepath, group)
+    for key, value in x.items():
+        value['subject'] = key
+    save_dict['NR'][group]['edges']=pd.concat(list(x.values()))
+
+liist = [save_dict['NR']['no']['edges'], save_dict['NR']['ov']['edges'], save_dict['NR']['ob']['edges']]
+sub_edge_df=pd.concat(liist)
+sub_edge_df.to_csv(os.path.join(basepath,'tmp','sub_edge_data.csv'), sep=',')
 an.adillyofapickle('/Users/gracer/Google Drive/HCP/HCP_graph/1200/datasets',save_dict['NR'],'10_subedge_dict')
+
 
 #making a dataframe
 subedge_dict = save_dict['NR']
