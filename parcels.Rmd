@@ -1,0 +1,41 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+brains <-read.table("~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/IC2gordon.csv", sep=",", header=F)
+head(brains)
+```
+
+
+
+```{r}
+z_brains<-apply(brains[1:100], MARGIN = 2, scale)
+describe(z_brains)
+z_brains<-as.data.frame(z_brains)
+z_brains <- cbind(z_brains, name = brains$V101)
+head(z_brains)
+```
+
+```{r}
+getting_names <- function(x) {
+  name = z_brains$name[[which.max(x)]]
+  return(name)
+}
+
+```
+
+
+
+```{r}
+names<-as.data.frame(apply(z_brains[1:100], 2, getting_names))
+head(names)
+names$IC<- rownames(names)
+colnames(names)[colnames(names) == 'apply(z_brains[1:100], 2, getting_names)'] <- 'Gordon Label'
+```
+```{r}
+write.table(names, "~/Google Drive/HCP/HCP_graph/1200/datasets/tmp/parcel_names.csv", row.names = F, sep = ",")
+```
+

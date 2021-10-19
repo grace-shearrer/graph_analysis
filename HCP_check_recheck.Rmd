@@ -442,6 +442,46 @@ eff_size(CC.net.fac, sigma = sigma(CC.net.gls), edf = 16847, by = "comb_label")
 CON<-subset(dat_net, dat_net$comb_label == "subcortical")
 violin(CON, CON$group, CON$clustering)
 ```
+```{r}
+names(dat_net)
+```
+```{r}
+summary(dat_net$module)
+dat_mod<-subset(dat_net, dat_net$module != 7)
+dat_mod<-subset(dat_mod, dat_mod$module != 8)
+dat_mod$module<-as.factor(dat_mod$module)
+summary(dat_mod$module)
+
+dat_mod <- transform(dat_mod, mods = interaction(group, module))
+head(dat_mod)
+```
+
+```{r}
+CC.mod.gls <- gls(clustering ~ Age_c + Gender + HBA1c_c + race_eth + motion_log10 + weight + mods, data = dat_mod, na.action = na.omit) #scaled so these are the betas
+CC.mod.emm <- emmeans(CC.mod.gls, "mods")
+CC.mod.fac <- update(CC.mod.emm, levels = list(
+                group = c("no","ov","ob"),
+                module = c("0","1", "2", "3","4","5","6")))
+
+contrast(CC.mod.fac, "pairwise", by = "module", adjust = "fdr")
+
+pwpm(CC.mod.fac, by = "module", adjust = "fdr")
+eff_size(CC.net.fac, sigma = sigma(CC.net.gls), edf = 16847, by = "comb_label")
+```
+
+```{r}
+dat_no<-subset(dat, dat$group == "no")
+balloonplot(table(dat_no$comb_label, dat_no$modules), main ="module", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
+dat_ov<-subset(dat, dat$group == "ov")
+balloonplot(table(dat_ov$comb_label, dat_ov$modules), main ="module", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
+dat_ob<-subset(dat, dat$group == "ob")
+balloonplot(table(dat_ob$comb_label, dat_ob$modules), main ="module", xlab ="", ylab="",
+            label = TRUE, show.margins = FALSE, colsrt = 90,text.size=1.5 ,dotsize = 10, dotcolor=cbPalette, colmar=5)
+library(fossil)
+rand.index(as.numeric(dat_no$modules), as.numeric(dat_ov$modules))
+```
 
 
 ```{r}
